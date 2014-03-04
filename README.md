@@ -1,5 +1,12 @@
 SQLite3-DB
 ==========
 Language: Python 2.7
+Description:
+	A wrapper class for sqlite3 Python DB library.
 
--A convenient wrapper class to use sqlite3 db library
+
+CONTRIBUTERS
+============
+Project Lead:
++ Coby Johnson (i2c2-caj)
+
