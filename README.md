@@ -1,7 +1,7 @@
 SQLite3-DB
 ==========
-Language: Python 2.7
-Description:
+Language: Python 2.7 \n
+Description: \n
 	A wrapper class for sqlite3 Python DB library.
 
 
