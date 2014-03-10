@@ -1,18 +1,30 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SQLite3-DB
-LAST UPDATE: 3/3/2014
+LAST UPDATE: 3/10/2014
+VERSION: 0.2.0
 
 DONE:
+== Constructors / Destructors==
 + DB.init
-+ DB.dictToStrings
+
+== Modify Table (Setters) ==
 + DB.createTable
 + DB.dropTable
 + DB.closeDB
-+ DB.printTable
+
+== Getters ==
++ DB.getColumnNames
 + DB.getConstraints
+
+== Utilities ==
++ DB.dictToStrings
++ DB.printTable
+
+== Error Reporting ==
 + DB.error
 + DB.warning
+
 
 TODO:
 -!!!NEED TO MAKE ALL FUNCTIONS SAFE FROM SQL INJECTION ATTACKS!!!-
@@ -62,11 +74,12 @@ class DB:
         
     #dropTable(self,
     #          table) #Table name
-    def dropTable(self, table):
+    def dropTable(self, table, force=False):
         answer = 'n'
-        self.warning('This will delete table "{0}" with all of it data'.format(table))
-        answer = raw_input('Are you sure you want to drop table "{0}"? (y/N)'.format(table))
-        if (answer.lower == 'y'):
+        if (force == False):
+            self.warning('This will delete table "{0}" with all of it data'.format(table))
+            answer = raw_input('Are you sure you want to drop table "{0}"? (y/N)'.format(table))
+        if (answer.lower == 'y' or force == True):
             #print '''DROP TABLE IF EXISTS {0}'''.format(table)
             self.cursor.execute('''DROP TABLE IF EXISTS {0}'''.format(table))
             self.db.commit()
@@ -76,33 +89,34 @@ class DB:
 
     #clearTable(self,
     #           table) #Table name
-    def clearTable(self, table):
+    def clearTable(self, table, force=False):
         answer = 'n'
-        self.warning('This will delete all data from table "{0}"'.format(table))
-        answer = raw_input('Are you sure you want to delete all records from table "{0}"? (y/N)'.format(table))
-        if (answer.lower() == 'y'):
+        if (force == False):
+            self.warning('This will delete all data from table "{0}"'.format(table))
+            answer = raw_input('Are you sure you want to delete all records from table "{0}"? (y/N)'.format(table))
+        if (answer.lower() == 'y' or force == True):
             self.cursor.execute('''DELETE FROM {0}'''.format(table))
             self.db.commit()
             print 'Table "{0}" successfully cleared.'.format(table)
         else:
             print 'Disaster averted. Table "{0}" was not changed.'.format(table)
 
-    #alterTable(self,
-    #           table,   #Table
-    #           command) #SUPPORTS ADD column, RENAME TO table
-    ### NOTE: SQLITE3 DOES NOT SUPPORT: RENAME column, DROP column ###
-    def alterTable(self, table, command):
-        #print 'ALTER TABLE {0} {1}'.format(table, command)
-        self.cursor.execute('''ALTER TABLE {0} {1}'''.format(table, command))
-        self.db.commit()
-        return
+##    #alterTable(self,
+##    #           table,   #Table
+##    #           command) #SUPPORTS ADD column, RENAME TO table
+##    ### NOTE: SQLITE3 DOES NOT SUPPORT: RENAME column, DROP column ###
+##    def alterTable(self, table, command):
+##        #print 'ALTER TABLE {0} {1}'.format(table, command)
+##        self.cursor.execute('''ALTER TABLE {0} {1}'''.format(table, command))
+##        self.db.commit()
+##        return
 
     #insertRow(self,
     #          row,  #ROW NAME
     #          info) #{key0:value0, ..., keyX:valueX}
     def insertRow(self, row, info):
         (keys, values) = self.paramDict(info)
-        #print '''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values)
+        print '''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values)
         try:
             #Will add row to DB unless there is a duplicate PRIMARY/UNIQUE key constraint.
             self.cursor.execute('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values), info)
@@ -110,61 +124,62 @@ class DB:
             return
         except sql.IntegrityError:
             #Tell user to inherit and overwrite this method
+            print info
             raise NotImplementedError('Could not insert row: You need to implement how you want to merge your ADT.')
         
-    #deleteRow(self,
-    #          row,       #ROW NAME
-    #          condition) #INSERT CONDITIONAL STATEMENT   
-    def deleteRow(self, row, condition):
-        #print '''DELETE FROM {0} WHERE {1}'''.format(row, condition)
-        self.cursor.execute('''DELETE FROM {0} WHERE {1}'''.format(row, condition))
-        self.db.commit()
-        return
+##    #deleteRow(self,
+##    #          row,       #ROW NAME
+##    #          condition) #INSERT CONDITIONAL STATEMENT   
+##    def deleteRow(self, row, condition):
+##        #print '''DELETE FROM {0} WHERE {1}'''.format(row, condition)
+##        self.cursor.execute('''DELETE FROM {0} WHERE {1}'''.format(row, condition))
+##        self.db.commit()
+##        return
 
-    #getRowByID(self,
-    #           row,  #ROW NAME
-    #           ID)   #ID OF ROW TO RETURN
-    def getRowByID(self, row, ID):
-        #print '''SELECT * FROM {0} WHERE ID={1}'''.format(row, ID)
-        self.cursor.execute('''SELECT * FROM {0} WHERE ID=?'''.format(row), (ID))
-        result = self.cursor.fetchone()
-        if (result == None):
-            print '##### No data from table "{0}" exists with ID "{1}" #####'.format(row, ID)
-        return result
+##    #getRowByID(self,
+##    #           row,  #ROW NAME
+##    #           ID)   #ID OF ROW TO RETURN
+##    def getRowByID(self, row, ID):
+##        #print '''SELECT * FROM {0} WHERE ID={1}'''.format(row, ID)
+##        self.cursor.execute('''SELECT * FROM {0} WHERE ID=?'''.format(row), (ID))
+##        result = self.cursor.fetchone()
+##        if (result == None):
+##            print '##### No data from table "{0}" exists with ID "{1}" #####'.format(row, ID)
+##        return result
 
-    #getRow(self,
-    #           row,       #ROW NAME
-    #           condition) #ID OF ROW TO RETURN
-    def getRow(self, row, condition):
-        print '''SELECT * FROM {0} WHERE {1}'''.format(row, condition)
-        self.cursor.execute('''SELECT * FROM {0} WHERE {1}'''.format(row, condition))
-        result = self.cursor.fetchone()
-        if (result == None):
-            print '##### No data from table "{0}" exists with statement "{1}" #####'.format(row, condition)
-        return result
+##    #getRow(self,
+##    #           row,       #ROW NAME
+##    #           condition) #ID OF ROW TO RETURN
+##    def getRow(self, row, condition):
+##        print '''SELECT * FROM {0} WHERE {1}'''.format(row, condition)
+##        self.cursor.execute('''SELECT * FROM {0} WHERE {1}'''.format(row, condition))
+##        result = self.cursor.fetchone()
+##        if (result == None):
+##            print '##### No data from table "{0}" exists with statement "{1}" #####'.format(row, condition)
+##        return result
 
-    #updateRow(self,
-    #          row,    #ROW NAME
-    #          column, #COLUMN NAME
-    #          value,  #NEW COLUMN VALUE
-    #          ID)     #ID OF ROW
-    def updateRow(self, row, column, value, ID):
-        print '''UPDATE {0} SET {1}={2} WHERE ID={3}'''.format(row, column, value, ID)
-        self.cursor.execute('''UPDATE {0} SET {1}=? WHERE ID=?'''.format(row, column), (value, ID))
-        self.db.commit()
-        return
+##    #updateRow(self,
+##    #          row,    #ROW NAME
+##    #          column, #COLUMN NAME
+##    #          value,  #NEW COLUMN VALUE
+##    #          ID)     #ID OF ROW
+##    def updateRow(self, row, column, value, ID):
+##        print '''UPDATE {0} SET {1}={2} WHERE ID={3}'''.format(row, column, value, ID)
+##        self.cursor.execute('''UPDATE {0} SET {1}=? WHERE ID=?'''.format(row, column), (value, ID))
+##        self.db.commit()
+##        return
 
-    #innerJoin(self,
-    #          table1,    #
-    #          column1,   #
-    #          table2,    #
-    #          column2,   #
-    #          condition) #
-    def innerJoin(self, table1, column1, table2, column2, condition):
-        print '''SELECT {0}.{1}, {2}.{3} FROM {0} JOIN {2} ON {4}'''.format(table1, column1, table2, column2, condition)
-        self.cursor.execute('''SELECT {0}.{1}, {2}.{3} FROM {0} JOIN {2} ON {4}'''.format(table1, column1, table2, column2, condition))
-        results = self.cursor.fetchall()
-        return results
+##    #innerJoin(self,
+##    #          table1,    #
+##    #          column1,   #
+##    #          table2,    #
+##    #          column2,   #
+##    #          condition) #
+##    def innerJoin(self, table1, column1, table2, column2, condition):
+##        print '''SELECT {0}.{1}, {2}.{3} FROM {0} JOIN {2} ON {4}'''.format(table1, column1, table2, column2, condition)
+##        self.cursor.execute('''SELECT {0}.{1}, {2}.{3} FROM {0} JOIN {2} ON {4}'''.format(table1, column1, table2, column2, condition))
+##        results = self.cursor.fetchall()
+##        return results
 
     #printTable(self,
     #           table) #Table name
@@ -176,19 +191,38 @@ class DB:
 
     #getColumnNames(self,
     #               table) #Table name
+    """
+    Returns all the columns name values
+    Returns in the format (tableName, [columnNames])
+    """
     def getColumnNames(self, table):
-        """
-        [(Column Number, Column Name, Data Type, Able to be Null/Not Null, Default Value, Is Primary key?), ..., ()]
-        """
-        try:
-            self.db.row_factory = sql.Row
-            cursor = self.db.execute('select * from {0}'.format(table))
-            row = cursor.fetchone()
-            names = row.keys()
-            return tuple(names)
-        except:
-            print '##### No columns in table "{0}". #####'.format(table)
-            return []
+        #Get table header from DB
+        d = {}
+        d['name'] = table
+        self.cursor.execute("select * from sqlite_master where name=(:name)", d)
+        schema = self.cursor.fetchone()
+        #Does the table exist?
+        if (schema == None):
+            self.error('Failed to find column names: Table does not exist.')
+        #Find the paranthesis
+        lp = schema[4].find('(') + 1
+        rp = schema[4].rfind(')')
+        #Type cast from unicode to string
+        schema = str(schema[4])
+        #Splice out the columnnames
+        schema = schema[lp:rp]
+        temp = schema.split(',')
+        #Remove white space
+        columns = []
+        for item in temp:
+            columns.append(item.strip())
+        #pull names out and discard restraints
+        names = []
+        for n in columns:
+            sp = n.find(' ')
+            temp = n[:sp]
+            names.append(temp)
+        return (table, names)
 
     #paramDict(self,
     #          info)    #Dictionary to parse
@@ -229,7 +263,7 @@ class DB:
             #Pull out unique constraints for each table
             U = []
             for item in T:
-                U.append((str(item[1]), self.getConstraints(item[1])))
+                U.append(self.getConstraints(item[1])[0])
             return U
 
         #Find constraints in a specific table
@@ -313,23 +347,24 @@ def main():
 ##    hack = "x' AND members.email IS NULL; --"
 ##    print db.safe(hack)
 
-    db.dropTable('MTG')
-    db.dropTable('Test')
+    db.dropTable('MTG', 1)
+    db.dropTable('Test', 1)
 
     db.createTable('MTG', '(name TEXT UNIQUE, color TEXT, count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
     db.insertRow('MTG', {'name': 'Plain', 'color': 'WH', 'count': 50})
-    #db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 50})
+    db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 50})
     db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 50})
 
     #db.createTable('Test', '(test TEXT, name INTEGER PRIMARY KEY)')
 
     #GET THIS TO WORK WITH MULTIPLE TABLES IN DATABASE
 
-    print db.getConstraints('MTG')
+    #print db.getConstraints('MTG')
     #print db.getConstraints('Test')
-    print db.getConstraints()
+    #print db.getConstraints()
 
-    print db.clearTable('MTG')
+    #print db.clearTable('MTG')
+    #print db.getColumnNames('MTG')
 
     #db.printTable('MTG')
     
