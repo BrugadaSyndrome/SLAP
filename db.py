@@ -21,6 +21,7 @@ DONE:
 + DB.deleteRow
 + DB.getRow
 + DB.getValues
++ DB.updateRow
 
 == Utilities ==
 + DB.dictToStrings
@@ -38,10 +39,6 @@ TODO:
 
 -PROPERLY TEST INNER JOIN FUNCTION TO PROVE FUNCTIONALITY
     -WRITE COMMENTS ON PARAMETERS
-
-+DONE: MADE INSERT ROW UPDATE COUNT WITH UNIQUE TEXT CONSTRAINT+
--FINSH UPDATING INSERT ROW TO HANDLE UNIQUE CONSTRAINTS THAT ARE NUMBERS
-    -MAKE THIS WORK WITH MULTIPLE UNIQUE CONSTRAINTS
 
 -MODIFY ALTER TABLE FUNCTION TO BE ABLE TO DROP TABLE AND RENAME COLUMNS BY:
     -HAVING IT COPY INFO TO NEW TABLE AND THEN RENAMING THE TABLE WHEN DROPPING A COLUMN
@@ -172,16 +169,18 @@ class DB:
             self.warning('No data from table ({0}) exists with statement ({1})'.format(row, str(keys)+'='+str(values)))
         return result
 
-##    #updateRow(self,
-##    #          row,    #ROW NAME
-##    #          column, #COLUMN NAME
-##    #          value,  #NEW COLUMN VALUE
-##    #          ID)     #ID OF ROW
-##    def updateRow(self, row, column, value, ID):
-##        print '''UPDATE {0} SET {1}={2} WHERE ID={3}'''.format(row, column, value, ID)
-##        self.cursor.execute('''UPDATE {0} SET {1}=? WHERE ID=?'''.format(row, column), (value, ID))
-##        self.db.commit()
-##        return
+    #updateRow(self,
+    #          row,        #
+    #          info,       #
+    #          condition)  #
+    def updateRow(self, row, info, condition):
+        print self.paramDict(info)
+        changes = self.paramDict(info, 1)
+        (key, value) = self.paramDict(condition)
+        print '''UPDATE {0} SET {1} WHERE {2}={3}'''.format(row, changes, key, value)
+        self.cursor.execute('''UPDATE {0} SET {1} WHERE {2}={3}'''.format(row, changes, key, value), info)
+        self.db.commit()
+        return
 
 ##    #innerJoin(self,
 ##    #          table1,    #
@@ -239,22 +238,30 @@ class DB:
         return (table, names)
 
     #paramDict(self,
-    #          info)    #Dictionary to parse
+    #          info,    #Dictionary to parse
+    #          pair)    #Pair values (ie.key=:key) when true.
     """
     Parameterizes a dictionary into appropriate string values
-    Strings look like this:
+    Strings look like this when pair = false:
     key:    "key0, ..., keyX"
     values: ":value0, ..., :valueX"
     """
-    def paramDict(self, info):
-        keys = ""
-        values = ""
-        for k in info.keys():
-            keys += k + ", "
-            values += ":" + k + ", "
-        keys = keys[:len(keys)-2]
-        values = values[:len(values)-2]
-        return (keys, values)
+    def paramDict(self, info, pair=0):
+        if (pair == 1):
+            pairs = ""
+            for k in info.keys():
+                pairs += k + "=:" + k + ", "
+            pairs = pairs[:len(pairs)-2]
+            return pairs
+        else:
+            keys = ""
+            values = ""
+            for k in info.keys():
+                keys += k + ", "
+                values += ":" + k + ", "
+            keys = keys[:len(keys)-2]
+            values = values[:len(values)-2]
+            return (keys, values)
 
     #getConstraints(self,
     #               table) #Table name
@@ -360,38 +367,57 @@ def Tests(db):
     #Drop table normally
     #db.dropTable('MTG')
     db.dropTable('MTG', 1)
+
     #Force table to drop without asking
     db.dropTable('Test', 1)
+
     #Create table
     db.createTable('MTG', '(name TEXT UNIQUE, color TEXT, count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
     db.createTable('Test', '(test TEXT, name INTEGER PRIMARY KEY)')
+
     #Insert rows
     db.insertRow('MTG', {'name': 'Plain', 'color': 'WH', 'count': 10})
     db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 20})
     db.insertRow('MTG', {'name': 'Mountain', 'color': 'RD', 'count': 30})
     db.insertRow('MTG', {'name': 'Forest', 'color': 'G', 'count': 40})
     db.insertRow('MTG', {'name': 'Island', 'color': 'BL', 'count': 50})
+
     #Delete row
     db.deleteRow('MTG', 'ID=1')
-    #Should crash: name is a unique field, cant have duplicate, 1
+
+    #Should crash: name is a unique field, cant have duplicate
     #db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 50})
+
     #Get row
+    print "=========="
+    print 'get row'
+    print '=========='
     print db.getRow('MTG', {'name': 'Plain'})
     print db.getRow('MTG', {'color': 'G'})
+
     #Get values
     print db.getValues('MTG', {'name': 'Plain', 'ID':  1, 'color': 'WH', 'count': 50}, 'ID=:ID')
-    print db.getValues('MTG', {'name': 'Swamp', 'ID':  1, 'color': 'BK', 'count': 50}, 'color="BK"')
+    print db.getValues('MTG', {'name': 'Swamp', 'ID':  2, 'color': 'BK', 'count': 50}, 'color="BK"')
+
     #Get Cconstraints
     print db.getConstraints('MTG')
     print db.getConstraints()
+
     #Get column names
     print db.getColumnNames('MTG')
+
     #Print table
     db.printTable('MTG')
+
+    #Update row
+    db.updateRow('MTG', {'count': 2000, 'color': 'IDK', 'ID': 3}, {'ID': 3})
+
     #Clear table
     db.clearTable('MTG')
+
     #Clear table without asking
     #db.clearTable('MTG', 1)
+
     #Print table
     db.printTable('MTG')
 
