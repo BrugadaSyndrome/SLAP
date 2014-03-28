@@ -13,4 +13,5 @@ FILES
 =====
 + adapters.py
 + db.py
++ errors.py
 + tests.py
