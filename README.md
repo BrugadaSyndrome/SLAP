@@ -1,6 +1,6 @@
 SQLite3-DB
 ==========
-Written in Python 2.7 as a wrapper class for sqlite3 Python DB library.
+Written in Python 2.7.5 as a wrapper class for sqlite3 Python module library.
 
 
 CONTRIBUTERS
@@ -8,3 +8,9 @@ CONTRIBUTERS
 Project Lead:
 + Coby Johnson (i2c2-caj)
 
+
+FILES
+=====
++ adapters.py
++ db.py
++ tests.py

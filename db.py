@@ -1,41 +1,50 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SQLite3-DB
-LAST UPDATE: 3/10/2014
-VERSION: 0.2.0
+LAST UPDATE: 3/26/2014
+VERSION: 0.2.1
 
 DONE:
 == Constructors / Destructors ==
-+ DB.init
++ DB.init (3/26/2014)
 
 == Modify Table (Setters) ==
-+ DB.createTable
++ DB.createTable (3/26/2014)
 + DB.closeDB
++ DB.deleteRow
 + DB.dropTable
 + DB.insertRow
-
++ DB.updateRow
 
 == Getters ==
 + DB.getColumnNames
 + DB.getConstraints
-+ DB.deleteRow
++ DB.getDBName
 + DB.getRow
++ DB.getTableNames (3/26/2014)
 + DB.getValues
-+ DB.updateRow
 
 == Utilities ==
 + DB.dictToStrings
 + DB.printTable
 
 == Error Reporting ==
-+ DB.error
 + DB.warning
 
 
 TODO:
--!!!NEED TO MAKE ALL FUNCTIONS SAFE FROM SQL INJECTION ATTACKS!!!-
+- remove all traces of self.error and replace with custom errors
 
--REVISIT ALL FUNCTIONS NOT IN DONE LIST AND FIX TO USE DICTIONARY PARAMETERS
+- unittest FOR ALL FUNCTIONS
+    + port function Tests into unittests
+
+- MODIFY paramDict()
+    + TO TAKE ALL OPERATORS (<=, <, >=, >, !=, =) under pair == 2
+    + VALUES DO NOT MATTER FOR pair == 0 OR pair == 1
+    + WHEN pair == 2 VALUES WILL BE (operator, value)
+    + DO ERROR HANDLING FOR pair == 3 WHEN THE operator VARIABLE IS NOT A VALID OPERATOR
+
+-!!!NEED TO MAKE ALL FUNCTIONS SAFE FROM SQL INJECTION ATTACKS!!!-
 
 -PROPERLY TEST INNER JOIN FUNCTION TO PROVE FUNCTIONALITY
     -WRITE COMMENTS ON PARAMETERS
@@ -44,21 +53,20 @@ TODO:
     -HAVING IT COPY INFO TO NEW TABLE AND THEN RENAMING THE TABLE WHEN DROPPING A COLUMN
     -HAVING IT COPY INFO TO NEW TABLE BUT RENAME THE COLUMN THAT NEEDS TO BE RENAMED
 
--LOOK INTO ADAPTERS LINKING A DATATYPE TO STRING CONVERSION FUNCTION FOR STORAGE IN SQL DB
-
-----------------------------------------
-EVENTUALLY DO SOMETIME IN THE FAR FUTURE:
--STOP HACKERS BY SCARING THE CRAP OUT OF THEM IF THEY TRY INTENTIALLY MALICOUS CODE
-    -RETURN URL PAGE WITH THEIR HOME ADDRESS AND SAYING WE HAVE NOTIFED THE LOCAL FBI
-     OF THEIR ILLEGAL ACTIVITIES.
 """
 
+from errors import *
 import sqlite3 as sql
+import sys
+import unittest
 
 class DB:
     #__int__(self,
     #        name) #Name of the DB to be created
-    def __init__(self, name):
+    def __init__(self, name=":memory:"):
+        #Data members
+        self.name = name.rstrip(".sql")
+        
         #Load DB
         self.db = sql.connect(name)
         #Create DB cursor
@@ -72,39 +80,39 @@ class DB:
             #print '''CREATE TABLE {0} {1}'''.format(table, info)
             self.cursor.execute('''CREATE TABLE {0} {1}'''.format(table, info))
             self.db.commit()
-            return
+            return True
+        except sql.OperationalError:
+            if (table in self.getTableNames()):
+                raise DuplicateTableError(table, self.name)
+            else:
+                raise SyntaxError('''CREATE TABLE {0} {1}'''.format(table, info))
         except:
-            self.error('Table "{0}" already exists.'.format(table))
+            #raise unkown of type "blah"
+            pass
         
     #dropTable(self,
     #          table) #Table name
-    def dropTable(self, table, force=False):
-        answer = 'n'
-        if (force == False):
-            self.warning('This will delete table ({0}) with all of it data'.format(table))
-            answer = raw_input('Are you sure you want to drop table "{0}"? (y/N)'.format(table))
-        if (answer.lower() == 'y' or force == True):
-            #print '''DROP TABLE IF EXISTS {0}'''.format(table)
-            self.cursor.execute('''DROP TABLE IF EXISTS {0}'''.format(table))
-            self.db.commit()
-        else:
-            print 'Disaster averted. Table ({0}) was not changed.'.format(table)
-        return
+    def dropTable(self, table):
+        #print '''DROP TABLE IF EXISTS {0}'''.format(table)
+        self.cursor.execute('''DROP TABLE IF EXISTS {0}'''.format(table))
+        self.db.commit()
+        return True
 
     #clearTable(self,
     #           table) #Table name
-    def clearTable(self, table, force=False):
-        answer = 'n'
-        if (force == False):
-            self.warning('This will delete all data from table ({0})'.format(table))
-            answer = raw_input('Are you sure you want to delete all records from table ({0})? (y/N)'.format(table))
-        if (answer.lower() == 'y' or force == True):
+    def clearTable(self, table):
+        try:
             self.cursor.execute('''DELETE FROM {0}'''.format(table))
             self.db.commit()
             print 'Table ({0}) successfully cleared.'.format(table)
-        else:
-            print 'Disaster averted. Table ({0}) was not changed.'.format(table)
-        return
+            return True
+        except sql.OperationalError:
+            print self.error('Table ({0}) does not exist and cannot be cleared.'.format(table))
+            return E_OPERATIONAL
+        except:
+            print self.error('Statement has errors: {0}'.format(table))
+            return E_SYNTAX
+            
 
 ##    #alterTable(self,
 ##    #           table,   #Table
@@ -139,22 +147,24 @@ class DB:
     #          row,       #Row name
     #          condition) #Condition to select data 
     def deleteRow(self, row, condition):
-        print '''DELETE FROM {0} WHERE {1}'''.format(row, condition)
-        self.cursor.execute('''DELETE FROM {0} WHERE {1}'''.format(row, condition))
+        (key, value) = self.paramDict(condition)
+        print '''DELETE FROM {0} WHERE {1}={2}'''.format(row, key, condition[key])
+        self.cursor.execute('''DELETE FROM {0} WHERE {1}={2}'''.format(row, key, value), condition)
         self.db.commit()
         return
 
     #getValues(self,
     #          row,       #Row name
     #          info,      #Dictionary of data involved in the query
-    #          condition) #Values to find
+    #          condition) #Dictionary of a single item with a certain value to be found in DB
     def getValues(self, row, info, condition):
         (keys, values) = self.paramDict(info)
-        print '''SELECT ({0}) FROM {1} WHERE {2}'''.format(keys, row, condition)
-        self.cursor.execute('''SELECT {0} FROM {1} WHERE {2}'''.format(keys, row, condition), info)
+        (key, value) = self.paramDict(condition)
+        print '''SELECT ({0}) FROM {1} WHERE {2}={3}'''.format(keys, row, key, condition[key])
+        self.cursor.execute('''SELECT {0} FROM {1} WHERE {2}={3}'''.format(keys, row, key, value), info)
         result = self.cursor.fetchall()
         if (result == []):
-            self.warning('No data from table ({0}) exists with statement ({1})'.format(row, condition))
+            self.warning('No data from table ({0}) exists with statement ({1}={2})'.format(row, key, condition[key]))
         return result
 
     #getRow(self,
@@ -162,17 +172,17 @@ class DB:
     #       info)      #Dictionary of data involved in the query
     def getRow(self, row, info):
         (keys, values) = self.paramDict(info)
-        print '''SELECT * FROM {1} WHERE {0}={2}'''.format(keys, row, values)
+        print '''SELECT * FROM {1} WHERE {0}={2}'''.format(keys, row, info[keys])
         self.cursor.execute('''SELECT * FROM {1} WHERE {0}={2}'''.format(keys, row, values), info)
         result = self.cursor.fetchall()
         if (result == []):
-            self.warning('No data from table ({0}) exists with statement ({1})'.format(row, str(keys)+'='+str(values)))
+            self.warning('No data from table ({0}) exists with statement ({1})'.format(row, str(keys)+'='+str(info[keys])))
         return result
 
     #updateRow(self,
-    #          row,        #
-    #          info,       #
-    #          condition)  #
+    #          row,        #Row name
+    #          info,       #Dictionary of data involved in the query
+    #          condition)  #Dictionary of a single item with a certain value to be found in DB
     def updateRow(self, row, info, condition):
         print self.paramDict(info)
         changes = self.paramDict(info, 1)
@@ -201,6 +211,19 @@ class DB:
         for row in cursor:
             print row
         return
+
+    ##getTableNames(self)
+    """
+    Returns all table names in DB
+    """
+    def getTableNames(self):
+        self.cursor.execute("select * from sqlite_master")
+        schema = self.cursor.fetchall()
+        tables = []
+        for i in schema:
+            if (i[0] == "table" and i[1] != "sqlite_sequence"):
+                tables.append(str(i[1]))
+        return tables
 
     #getColumnNames(self,
     #               table) #Table name
@@ -242,18 +265,24 @@ class DB:
     #          pair)    #Pair values (ie.key=:key) when true.
     """
     Parameterizes a dictionary into appropriate string values
-    Strings look like this when pair = false:
+    
+    Return values look like this when pair = 0:
     key:    "key0, ..., keyX"
-    values: ":value0, ..., :valueX"
+    values: ":key0, ..., :keyX"
+
+    Rturn value looks like this when pair = 1:
+    pairs = "key0=:key0, ... , keyX=:keyX"
+
+    Return value looks like this when pair = 2:
+    pairs = "key0<=:key0, key1!=:key1, ... , keyX<:keyX"
+
+    Return valu looks like this when pair = 3:
+    pairs = "key0<=value0, key1!=value1, ... , keyX<valueX"
+
+    
     """
     def paramDict(self, info, pair=0):
-        if (pair == 1):
-            pairs = ""
-            for k in info.keys():
-                pairs += k + "=:" + k + ", "
-            pairs = pairs[:len(pairs)-2]
-            return pairs
-        else:
+        if (pair == 0):
             keys = ""
             values = ""
             for k in info.keys():
@@ -262,6 +291,27 @@ class DB:
             keys = keys[:len(keys)-2]
             values = values[:len(values)-2]
             return (keys, values)
+        elif (pair == 1):
+            pairs = ""
+            for k in info.keys():
+                pairs += k + "=:" + k + ", "
+            pairs = pairs[:len(pairs)-2]
+            return pairs
+        elif (pair == 2):
+            pairs = ""
+            for k in info.keys():
+                pairs += k + info[k][0] + ":" + k + ", "
+            pairs = pairs[:len(pairs)-2]
+            return pairs
+        elif (pair == 3):
+            pairs = ""
+            for k in info.keys():
+                if (type(info[k][1]) is str):
+                    pairs += k + info[k][0] + '"' + info[k][1] + '", '
+                else:
+                    pairs += k + info[k][0] + str(info[k][1]) + ", "
+            pairs = pairs[:len(pairs)-2]
+            return pairs
 
     #getConstraints(self,
     #               table) #Table name
@@ -323,20 +373,23 @@ class DB:
 
     #closeDB(self)
     def closeDB(self):
-        #Save database
-        self.db.commit()
-        #Close cursor
-        self.cursor.close()
-        #Close database
-        self.db.close()
-        return
+        try:
+            #Save database
+            self.db.commit()
+            #Close cursor
+            self.cursor.close()
+            #Close database
+            self.db.close()
+            return True
+        except:
+            return False
 
     #error(self,
     #      message) #Error message to be displayed
     def error(self, message):
         self.db.rollback()
-        self.closeDB()
-        raise Exception('### {0} ###'.format(message))
+        #self.closeDB()
+        raise RuntimeError('### {0} ###'.format(message))
 
     #warning(self,
     #        message) #Warning message to be displayed
@@ -344,101 +397,88 @@ class DB:
         print '=== {0}! ==='.format(message)
         return
 
-    #safe(self)
-    """
-    Prevents SQL Injection attacks
-    """
-    def safe(self, string):
-        safe_chars = 'abcdefghijklmonpqrstuvwxyzABCDEFGHIJKLMONPQRSTUVWXYZ0123456789@.-_+'
-        for c in string:
-            if not(c in safe_chars):
-                return 'False: {0}'.format(string)
-        return 'True: {0}'.format(string)
+    #getDBName(self)
+    def getDBName(self):
+        return self.name
 
 def Tests(db):
-    """
-    Helper Methods
-    """
-    print db.paramDict({'Name': 'Test', "Number": 9, "Count": 20})
-
+##    """
+##    Helper Methods
+##    """
+##    print db.paramDict({'Name': 'Test', "Number": 9, "Count": 20})
+##    print db.paramDict({'Name': 'Test', "Number": 9, "Count": 20}, 1)
+##    print db.paramDict({'Name': ('!=','Test'), "Number": ("=",9), "Count": ("<", 20)}, 2)
+##    print db.paramDict({'Name': ('!=','Test'), "Number": ("=",9), "Count": ("<", 20)}, 3)
+##
+##
     """
     DB Methods
     """
     #Drop table normally
     #db.dropTable('MTG')
-    db.dropTable('MTG', 1)
+    db.dropTable('MTG')
 
     #Force table to drop without asking
-    db.dropTable('Test', 1)
+    db.dropTable('Test')
 
     #Create table
     db.createTable('MTG', '(name TEXT UNIQUE, color TEXT, count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
+    db.createTable('MT', '(name TEXT UNIQUE, color TEXT count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
+    #db.createTable('MTG', '(name TEXT UNIQUE, color TEXT, count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
     db.createTable('Test', '(test TEXT, name INTEGER PRIMARY KEY)')
-
-    #Insert rows
-    db.insertRow('MTG', {'name': 'Plain', 'color': 'WH', 'count': 10})
-    db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 20})
-    db.insertRow('MTG', {'name': 'Mountain', 'color': 'RD', 'count': 30})
-    db.insertRow('MTG', {'name': 'Forest', 'color': 'G', 'count': 40})
-    db.insertRow('MTG', {'name': 'Island', 'color': 'BL', 'count': 50})
-
-    #Delete row
-    db.deleteRow('MTG', 'ID=1')
-
-    #Should crash: name is a unique field, cant have duplicate
-    #db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 50})
-
-    #Get row
-    print "=========="
-    print 'get row'
-    print '=========='
-    print db.getRow('MTG', {'name': 'Plain'})
-    print db.getRow('MTG', {'color': 'G'})
-
-    #Get values
-    print db.getValues('MTG', {'name': 'Plain', 'ID':  1, 'color': 'WH', 'count': 50}, 'ID=:ID')
-    print db.getValues('MTG', {'name': 'Swamp', 'ID':  2, 'color': 'BK', 'count': 50}, 'color="BK"')
-
-    #Get Cconstraints
-    print db.getConstraints('MTG')
-    print db.getConstraints()
-
-    #Get column names
-    print db.getColumnNames('MTG')
-
-    #Print table
-    db.printTable('MTG')
-
-    #Update row
-    db.updateRow('MTG', {'count': 2000, 'color': 'IDK', 'ID': 3}, {'ID': 3})
-
-    #Clear table
-    db.clearTable('MTG')
-
-    #Clear table without asking
-    #db.clearTable('MTG', 1)
-
-    #Print table
-    db.printTable('MTG')
+    #print db.getTableNames()
+    
+##
+##    #Insert rows
+##    db.insertRow('MTG', {'name': 'Plain', 'color': 'WH', 'count': 10})
+##    db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 20})
+##    db.insertRow('MTG', {'name': 'Mountain', 'color': 'RD', 'count': 30})
+##    db.insertRow('MTG', {'name': 'Forest', 'color': 'G', 'count': 40})
+##    db.insertRow('MTG', {'name': 'Island', 'color': 'BL', 'count': 50})
+##
+##    #Delete row
+##    db.deleteRow('MTG', {'ID': 1})
+##    db.deleteRow('MTG', {'name': 'Swamp'})
+##
+##    #Should crash: name is a unique field, cannot have duplicates
+##    #db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 50})
+##
+##    #Get row
+##    print db.getRow('MTG', {'name': 'Plain'})
+##    print db.getRow('MTG', {'color': 'G'})
+##
+##    #Get values
+##    print db.getValues('MTG', {'name': 'Plain', 'ID':  1, 'color': 'WH', 'count': 50}, {'ID': 1})
+##    print db.getValues('MTG', {'name': 'Swamp', 'ID':  2, 'color': 'BK', 'count': 50}, {'color': 'BK'})
+##
+##    #Get Cconstraints
+##    print db.getConstraints('MTG')
+##    print db.getConstraints()
+##
+##    #Get column names
+##    print db.getColumnNames('MTG')
+##
+##    #Print table
+##    db.printTable('MTG')
+##
+##    #Update row
+##    db.updateRow('MTG', {'count': 2000, 'color': 'IDK', 'ID': 3}, {'ID': 3})
+##
+##    #Clear table
+##    db.clearTable('MTG')
+##
+##    #Clear table without asking
+##    #db.clearTable('MTG', 1)
+##
+##    #Print table
+##    db.printTable('MTG')
 
 def main():
-    db = DB('MTG.sql')
-
-##    hack = "ilovehackers@hackers.net"
-##    print db.safe(hack)
-##    hack = "anything' or 'x'='x'"
-##    print db.safe(hack)
-##    hack = "steve@unixwiz.net'"
-##    print db.safe(hack)
-##    hack = "x' AND email IS NULL; --"
-##    print db.safe(hack)
-##    hack = "x' AND 1=(SELECT COUNT(*) FROM tabname); --"
-##    print db.safe(hack)
-##    hack = "x' AND members.email IS NULL; --"
-##    print db.safe(hack)
+    db = DB()
 
     Tests(db)
     
     db.closeDB()
 
-main()
+if __name__ == '__main__':
+    main()
