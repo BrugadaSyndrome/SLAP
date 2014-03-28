@@ -11,6 +11,7 @@ Project Lead:
 
 FILES
 =====
-+ adapters.py
-+ db.py
-+ tests.py
++ adapters.py (Datatype adapters for sqlite3 db module)
++ db.py (Main)
++ errors.py (Custom error methods)
++ tests.py (Testing done using the unittest module)
