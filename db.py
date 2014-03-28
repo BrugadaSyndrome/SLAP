@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SQLite3-DB
-LAST UPDATE: 3/26/2014
+LAST UPDATE: 3/27/2014
 VERSION: 0.2.1
 
 DONE:
@@ -9,8 +9,9 @@ DONE:
 + DB.init (3/26/2014)
 
 == Modify Table (Setters) ==
-+ DB.createTable (3/26/2014)
-+ DB.closeDB
++ DB.createTable (3/27/2014)
++ DB.clearTable (3/27/2014)
++ DB.closeDB (3/27/2014)
 + DB.deleteRow
 + DB.dropTable
 + DB.insertRow
@@ -86,9 +87,6 @@ class DB:
                 raise DuplicateTableError(table, self.name)
             else:
                 raise SyntaxError('''CREATE TABLE {0} {1}'''.format(table, info))
-        except:
-            #raise unkown of type "blah"
-            pass
         
     #dropTable(self,
     #          table) #Table name
@@ -106,12 +104,12 @@ class DB:
             self.db.commit()
             print 'Table ({0}) successfully cleared.'.format(table)
             return True
-        except sql.OperationalError:
-            print self.error('Table ({0}) does not exist and cannot be cleared.'.format(table))
-            return E_OPERATIONAL
-        except:
-            print self.error('Statement has errors: {0}'.format(table))
-            return E_SYNTAX
+        except sql.OperationalError as e:
+            if ("syntax error" in str(e)):
+                raise SyntaxError('''DELETE FROM {0}'''.format(table))
+            elif not (table in self.getTableNames()):
+                raise TableDNE_Error(table, self.name)
+                
             
 
 ##    #alterTable(self,
