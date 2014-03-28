@@ -9,6 +9,7 @@ DONE:
 TODO:
     
 """
+import sqlite3 as sql
 
 class DBError(Exception):
     pass
@@ -27,3 +28,10 @@ class SyntaxError(DBError):
 
     def __str__(self):
         return repr("With the query: {0}".format(self.value))
+
+class DBClosedError(DBError):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr("The DB ({0}) is already closed.".format(self.value))

@@ -381,15 +381,15 @@ class DB:
             #Close database
             self.db.close()
             return True
-        except:
-            return False
+        except sql.ProgrammingError:
+            raise DBClosedError(self.name)
 
-    #error(self,
-    #      message) #Error message to be displayed
-    def error(self, message):
-        self.db.rollback()
-        #self.closeDB()
-        raise RuntimeError('### {0} ###'.format(message))
+##    #error(self,
+##    #      message) #Error message to be displayed
+##    def error(self, message):
+##        self.db.rollback()
+##        #self.closeDB()
+##        raise RuntimeError('### {0} ###'.format(message))
 
     #warning(self,
     #        message) #Warning message to be displayed
@@ -423,7 +423,7 @@ def Tests(db):
 
     #Create table
     db.createTable('MTG', '(name TEXT UNIQUE, color TEXT, count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
-    db.createTable('MT', '(name TEXT UNIQUE, color TEXT count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
+    #db.createTable('MT', '(name TEXT UNIQUE, color TEXT count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
     #db.createTable('MTG', '(name TEXT UNIQUE, color TEXT, count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
     db.createTable('Test', '(test TEXT, name INTEGER PRIMARY KEY)')
     #print db.getTableNames()
