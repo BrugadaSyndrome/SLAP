@@ -6,8 +6,8 @@ VERSION: 0.1.0
 
 DONE:
 == Adaptors ==
-+   adapt_datetime(datetime.now()) => float
-+ extract_datetime(float) => datetime.now()
++   adapt_datetime(datetime.datetime.now()) => float (3/23/2014)
++ extract_datetime(float) => datetime.datetime.now() (3/23/2014)
 
 TODO:
 -!! Encrypt all personal data put into db !!

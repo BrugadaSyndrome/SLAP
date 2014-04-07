@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SQLite3-DB
-LAST UPDATE: 3/27/2014
+LAST UPDATE: 4/6/2014
 VERSION: 0.2.1
 
 DONE:
@@ -10,11 +10,11 @@ DONE:
 
 == Modify Table (Setters) ==
 + DB.createTable (3/27/2014)
-+ DB.clearTable (3/27/2014)
++ DB.clearTable (4/1/2014)
 + DB.closeDB (3/27/2014)
 + DB.deleteRow
 + DB.dropTable
-+ DB.insertRow
++ DB.insertRow (4/6/2014)
 + DB.updateRow
 
 == Getters ==
@@ -34,7 +34,7 @@ DONE:
 
 
 TODO:
-- remove all traces of self.error and replace with custom errors
+- [V 0.2.2] - Once all custom errors are done
 
 - unittest FOR ALL FUNCTIONS
     + port function Tests into unittests
@@ -102,7 +102,7 @@ class DB:
         try:
             self.cursor.execute('''DELETE FROM {0}'''.format(table))
             self.db.commit()
-            print 'Table ({0}) successfully cleared.'.format(table)
+            #print 'Table ({0}) successfully cleared.'.format(table)
             return True
         except sql.OperationalError as e:
             if ("syntax error" in str(e)):
@@ -129,18 +129,30 @@ class DB:
         (keys, values) = self.paramDict(info)
         #print '''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values)
         try:
-            #Will add row to DB unless there is a duplicate PRIMARY/UNIQUE key constraint.
             self.cursor.execute('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values), info)
             self.db.commit()
-            return
-        except sql.IntegrityError:
-            #Tell user to inherit and overwrite this method
-            constraints = self.getConstraints(row)
-            self.warning("The table ({0}) has the following constraints:".format(row))
-            self.warning("{0}".format(self.getConstraints(row)[0][1]))
-            self.warning("One of these constraints is being violated by insertRow() being called with duplicate values.")
-            raise NotImplementedError('Could not insert row: You need to implement how you want to merge your data.')
-        
+            return True
+        #Syntax error or Table DNE
+        except sql.OperationalError as e:
+            if ("syntax error" in str(e)):
+                raise SyntaxError('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values))
+            else:
+                raise TableDNE_Error(row, self.name)
+        #Constraint violation
+        except sql.IntegrityError as e:
+            if ("constraint failed" in str(e)):
+                raise ConstraintError('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values), self.getConstraints(row)[0][2], row, self.name)
+            else:
+                raise UniqueError('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values), self.getConstraints(row)[0][1], row, self.name)
+        #Adapter missing
+        except sql.InterfaceError as e:
+            e = str(e)
+            begin = e.find(':')
+            end = e.find(' ', begin)
+            var_name = e[begin+1:end]
+            var_value = info[var_name]
+            raise AdapterMissingError(var_value, row, self.name)
+
     #deleteRow(self,
     #          row,       #Row name
     #          condition) #Condition to select data 
@@ -364,10 +376,13 @@ class DB:
                 columns.append((item.strip(), item.lower().strip()))
             #Pull out unique/primary key constraints and return
             unique = []
+            check = []
             for item in columns:
                 if (item[1].find('unique') != -1 or item[1].find('primary key') != -1):
                     unique.append(item[0])
-            return [(name, unique)]
+                elif (item[1].find('check') != -1):
+                    check.append(item[0])
+            return [(name, unique, check)]
 
     #closeDB(self)
     def closeDB(self):
@@ -426,50 +441,51 @@ def Tests(db):
     db.createTable('Test', '(test TEXT, name INTEGER PRIMARY KEY)')
     #print db.getTableNames()
     
-##
-##    #Insert rows
-##    db.insertRow('MTG', {'name': 'Plain', 'color': 'WH', 'count': 10})
-##    db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 20})
-##    db.insertRow('MTG', {'name': 'Mountain', 'color': 'RD', 'count': 30})
-##    db.insertRow('MTG', {'name': 'Forest', 'color': 'G', 'count': 40})
-##    db.insertRow('MTG', {'name': 'Island', 'color': 'BL', 'count': 50})
-##
-##    #Delete row
-##    db.deleteRow('MTG', {'ID': 1})
-##    db.deleteRow('MTG', {'name': 'Swamp'})
-##
-##    #Should crash: name is a unique field, cannot have duplicates
-##    #db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 50})
-##
-##    #Get row
-##    print db.getRow('MTG', {'name': 'Plain'})
-##    print db.getRow('MTG', {'color': 'G'})
-##
-##    #Get values
-##    print db.getValues('MTG', {'name': 'Plain', 'ID':  1, 'color': 'WH', 'count': 50}, {'ID': 1})
-##    print db.getValues('MTG', {'name': 'Swamp', 'ID':  2, 'color': 'BK', 'count': 50}, {'color': 'BK'})
-##
-##    #Get Cconstraints
-##    print db.getConstraints('MTG')
-##    print db.getConstraints()
-##
-##    #Get column names
-##    print db.getColumnNames('MTG')
-##
-##    #Print table
-##    db.printTable('MTG')
-##
-##    #Update row
-##    db.updateRow('MTG', {'count': 2000, 'color': 'IDK', 'ID': 3}, {'ID': 3})
-##
-##    #Clear table
-##    db.clearTable('MTG')
-##
-##    #Clear table without asking
-##    #db.clearTable('MTG', 1)
-##
-##    #Print table
-##    db.printTable('MTG')
+
+    #Insert rows
+    db.insertRow('MTG', {'name': 'Plain', 'color': 'WH', 'count': 10})
+    db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 20})
+    db.insertRow('MTG', {'name': 'Mountain', 'color': 'RD', 'count': 30})
+    #db.insertRow('MTG', {'name': 'Mountain', 'color': 'RD', 'count': 30})
+    db.insertRow('MTG', {'name': 'Forest', 'color': 'G', 'count': 40})
+    db.insertRow('MTG', {'name': 'Island', 'color': 'BL', 'count': 50})
+
+    #Delete row
+    db.deleteRow('MTG', {'ID': 1})
+    db.deleteRow('MTG', {'name': 'Swamp'})
+
+    #Should crash: name is a unique field, cannot have duplicates
+    #db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 50})
+
+    #Get row
+    print db.getRow('MTG', {'name': 'Plain'})
+    print db.getRow('MTG', {'color': 'G'})
+
+    #Get values
+    print db.getValues('MTG', {'name': 'Plain', 'ID':  1, 'color': 'WH', 'count': 50}, {'ID': 1})
+    print db.getValues('MTG', {'name': 'Swamp', 'ID':  2, 'color': 'BK', 'count': 50}, {'color': 'BK'})
+
+    #Get Cconstraints
+    print db.getConstraints('MTG')
+    print db.getConstraints()
+
+    #Get column names
+    print db.getColumnNames('MTG')
+
+    #Print table
+    db.printTable('MTG')
+
+    #Update row
+    db.updateRow('MTG', {'count': 2000, 'color': 'IDK', 'ID': 3}, {'ID': 3})
+
+    #Clear table
+    db.clearTable('MTG')
+
+    #Clear table without asking
+    #db.clearTable('MTG', 1)
+
+    #Print table
+    db.printTable('MTG')
 
 def main():
     db = DB()
