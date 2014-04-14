@@ -8,6 +8,8 @@ DONE:
 == Errors ==
 + AdapterMissingError (4/6/2014)
 + DBClosedError (3/27/2014)
++ ColumnDNE_Error (4/6/2014)
++ ConstraintError (4/6/2014)
 + DuplicateTableError (3/27/2014)
 + SyntaxError (3/27/2014)
 + TableDNE_Error (4/6/2014)
@@ -29,6 +31,15 @@ class AdapterMissingError(DBError):
 
     def __str__(self):
         return repr("Table ({0}) in DB ({1}) has no adapter for the object of ({2})".format(self.table, self.db_name, type(self.obj_type)))
+
+class ColumnDNE_Error(DBError):
+    def __init__(self, dne_column, table, db_name):
+        self.dne_column = dne_column
+        self.table = table
+        self.db_name = db_name
+
+    def __str__(self):
+        return repr("Column ({0}) does not exist in table ({1}) in DB ({2}).".format(self.table, self.dne_column, self.db_name))
 
 class ConstraintError(DBError):
     def __init__(self, query, constraints, table, db_name):

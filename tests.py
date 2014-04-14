@@ -12,9 +12,13 @@ DONE:
 + test_deleteRow(4/6/2014)
 + test_dropTable (4/1/2014)
 + test_insertRow (4/6/2014)
++ test_paramDict (4/14/2014)
 
 TODO:
-+ Finish tests for all db methods
+- Finish tests for all db methods
+    + To get the last test working in deleteRow, a modified db.paramDict must be made to handle multiple conditions
+        (i.e. DELETE FROM table WHERE column=value => DELETE FROM table WHERE column<value AND NOT column=value)
+    + Write test for db.paramDict
 """
 
 import unittest
@@ -55,9 +59,10 @@ class DBTest(unittest.TestCase):
         self.failUnlessRaises(DBClosedError, t.closeDB)
 
         #No clean up necessary
+        
     def test_clearTable(self):
         #Setup
-        from errors import TableDNE_Error, SyntaxError
+        from errors import SyntaxError, TableDNE_Error
         import db
         t = db.DB(":memory:")
         
@@ -76,14 +81,28 @@ class DBTest(unittest.TestCase):
 
     def test_deleteRow(self):
         #Setup
-        from errors import TableDNE_Error, SyntaxError
+        from errors import ColumnDNE_Error, SyntaxError, TableDNE_Error
         import db
         t = db.DB(":memory:")
 
+        #Create a table => True
+        self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
+        #Insert full rows in an existing table => True
+        self.assertTrue(t.insertRow('test', {'name': 'Plain', 'color': 'WH', 'age': 10}))
+        self.assertTrue(t.insertRow('test', {'name': 'Mountain', 'color': 'RD', 'age': 10}))
+        self.assertTrue(t.insertRow('test', {'name': 'Swamp', 'color': 'BK', 'age': 10}))
         #Delete a row that exists => True
-        #Delete a row that does not exist => RowDNE_Error
-        #Delete a row with syntax errors => SyntaxError
+        self.assertTrue(t.deleteRow('test', {'ID': 1}))
+        #Delete a row that exists using multiple conditions => True
+        
+        #=====> self.assertTrue(t.deleteRow('test', {'ID': 2, 'name': 'Swamp'}))
+
+        #Delete a row with a column that does not exist => ColumnDNE_Error
+        self.failUnlessRaises(ColumnDNE_Error, t.deleteRow, 'test', {'junk': 'bar'})
         #Delete a row in a non-existant table => TableDNE_Error
+        self.failUnlessRaises(TableDNE_Error, t.deleteRow, 'fooey', {'name': 'Swamp'})
+        #Delete a row with syntax errors => SyntaxError
+        self.failUnlessRaises(SyntaxError, t.deleteRow, 'test', {'col(or': 'RD'})
         
         #Clean up
         #Close an open DB => True
@@ -91,7 +110,7 @@ class DBTest(unittest.TestCase):
 
     def test_dropTable(self):
         #Setup
-        from errors import TableDNE_Error, SyntaxError
+        from errors import SyntaxError, TableDNE_Error
         import db
         t = db.DB(":memory:")
         
@@ -138,6 +157,8 @@ class DBTest(unittest.TestCase):
         #Close an open DB => True
         self.assertTrue(t.closeDB())
 
+    def test_paramDict(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()
