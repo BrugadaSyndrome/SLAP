@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SQLite3-DB
-LAST UPDATE: 4/14/2014
+LAST UPDATE: 4/21/2014
 VERSION: 0.2.1
 
 DONE:
@@ -12,21 +12,21 @@ DONE:
 + DB.createTable (3/27/2014)
 + DB.clearTable (4/1/2014)
 + DB.closeDB (3/27/2014)
-+ DB.deleteRow (4/6/2014)
++ DB.deleteRow (4/21/2014)
 + DB.dropTable (4/1/2014)
 + DB.insertRow (4/6/2014)
 + DB.updateRow
 
 == Getters ==
-+ DB.getColumnNames
++ DB.getColumnNames (4/21/2014)
 + DB.getConstraints
-+ DB.getDBName
++ DB.getDBName (4/21/2014)
 + DB.getRow
 + DB.getTableNames (3/26/2014)
 + DB.getValues
 
 == Utilities ==
-+ DB.paramDict (4/14/2013)
++ DB.paramDict (4/21/2013)
 + DB.printTable
 
 == Error Reporting ==
@@ -66,7 +66,6 @@ class DB:
     def __init__(self, name=":memory:"):
         #Data members
         self.name = name.rstrip(".sql")
-        
         #Load DB
         self.db = sql.connect(name)
         #Create DB cursor
@@ -155,10 +154,10 @@ class DB:
     #          row,       #Row name
     #          condition) #Condition to select data 
     def deleteRow(self, row, condition):
-        (key, value) = self.paramDict(condition)
-        print '''DELETE FROM {0} WHERE {1}={2}'''.format(row, key, condition[key])
+        query = self.paramDict(condition, 2)
+        #print '''DELETE FROM {0} WHERE {1}'''.format(row, query)
         try:
-            self.cursor.execute('''DELETE FROM {0} WHERE {1}={2}'''.format(row, key, value), condition)
+            self.cursor.execute('''DELETE FROM {0} WHERE {1}'''.format(row, query), condition)
             self.db.commit()
             return True
         except sql.OperationalError as e:
@@ -170,7 +169,7 @@ class DB:
                 column = e[begin:]
                 raise ColumnDNE_Error(column, row, self.name)
             elif ("syntax error" in str(e)):
-                raise SyntaxError('''DELETE FROM {0} WHERE {1}={2}'''.format(row, key, value))
+                raise SyntaxError('''DELETE FROM {0} WHERE {1}'''.format(row, query))
 
     #getValues(self,
     #          row,       #Row name
@@ -253,7 +252,7 @@ class DB:
     def getColumnNames(self, table):
         #Get table header from DB
         d = {'name': table}
-        self.cursor.execute("select * from sqlite_master where name=(:name)", d)
+        self.cursor.execute("select * from sqlite_master", d)
         schema = self.cursor.fetchone()
         #Does the table exist?
         if (schema is None):
@@ -284,6 +283,7 @@ class DB:
     """
     Parameterizes a dictionary into appropriate string values
 
+    #db.insertRow()
     Return values look like this when pair = 0:
     key:    "key0, ..., keyX"
     values: ":key0, ..., :keyX"
@@ -453,35 +453,6 @@ def Tests(db):
 ##    """
 ##    DB Methods
 ##    """
-##    #Drop table normally
-##    #db.dropTable('MTG')
-##    db.dropTable('MTG')
-##
-##    #Force table to drop without asking
-##    db.dropTable('Test')
-##
-##    #Create table
-##    db.createTable('MTG', '(name TEXT UNIQUE, color TEXT, count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
-##    #db.createTable('MT', '(name TEXT UNIQUE, color TEXT count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
-##    #db.createTable('MTG', '(name TEXT UNIQUE, color TEXT, count INTEGER CHECK(count > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
-##    db.createTable('Test', '(test TEXT, name INTEGER PRIMARY KEY)')
-##    #print db.getTableNames()
-##    
-##
-##    #Insert rows
-##    db.insertRow('MTG', {'name': 'Plain', 'color': 'WH', 'count': 10})
-##    db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 20})
-##    db.insertRow('MTG', {'name': 'Mountain', 'color': 'RD', 'count': 30})
-##    #db.insertRow('MTG', {'name': 'Mountain', 'color': 'RD', 'count': 30})
-##    db.insertRow('MTG', {'name': 'Forest', 'color': 'G', 'count': 40})
-##    db.insertRow('MTG', {'name': 'Island', 'color': 'BL', 'count': 50})
-##
-##    #Delete row
-##    db.deleteRow('MTG', {'ID': 1})
-##    db.deleteRow('MTG', {'name': 'Swamp'})
-##
-##    #Should crash: name is a unique field, cannot have duplicates
-##    #db.insertRow('MTG', {'name': 'Swamp', 'color': 'BK', 'count': 50})
 ##
 ##    #Get row
 ##    print db.getRow('MTG', {'name': 'Plain'})

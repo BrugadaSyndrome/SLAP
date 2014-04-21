@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SQLite3-DB
-LAST UPDATE: 4/6/2014
+LAST UPDATE: 4/21/2014
 VERSION: 0.1.0
 
 DONE:
@@ -9,16 +9,15 @@ DONE:
 + test_clearTable (3/27/2014)
 + test_closeDB (3/27/2104)
 + test_createTable (3/27/2014)
-+ test_deleteRow(4/6/2014)
++ test_deleteRow(4/21/2014)
 + test_dropTable (4/1/2014)
++ test_getColumnName (4/21/2014)
++ test_getDBName(4/21/2014)
 + test_insertRow (4/6/2014)
-+ test_paramDict (4/14/2014)
++ test_paramDict (4/21/2014)
 
 TODO:
-- Finish tests for all db methods
-    + To get the last test working in deleteRow, a modified db.paramDict must be made to handle multiple conditions
-        (i.e. DELETE FROM table WHERE column=value => DELETE FROM table WHERE column<value AND NOT column=value)
-    + Write test for db.paramDict
+
 """
 
 import unittest
@@ -30,7 +29,7 @@ class DBTest(unittest.TestCase):
         #Setup
         from errors import DuplicateTableError, SyntaxError
         import db
-        t = db.DB(":memory:")
+        t = db.DB()
         
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
@@ -51,7 +50,7 @@ class DBTest(unittest.TestCase):
         #Setup
         from errors import DBClosedError
         import db
-        t = db.DB(":memory:")
+        t = db.DB()
 
         #Close an open DB => True
         self.assertTrue(t.closeDB())
@@ -64,7 +63,7 @@ class DBTest(unittest.TestCase):
         #Setup
         from errors import SyntaxError, TableDNE_Error
         import db
-        t = db.DB(":memory:")
+        t = db.DB()
         
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
@@ -83,7 +82,7 @@ class DBTest(unittest.TestCase):
         #Setup
         from errors import ColumnDNE_Error, SyntaxError, TableDNE_Error
         import db
-        t = db.DB(":memory:")
+        t = db.DB()
 
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
@@ -92,17 +91,15 @@ class DBTest(unittest.TestCase):
         self.assertTrue(t.insertRow('test', {'name': 'Mountain', 'color': 'RD', 'age': 10}))
         self.assertTrue(t.insertRow('test', {'name': 'Swamp', 'color': 'BK', 'age': 10}))
         #Delete a row that exists => True
-        self.assertTrue(t.deleteRow('test', {'ID': 1}))
+        self.assertTrue(t.deleteRow('test', {'ID': ('==', 1)}))
         #Delete a row that exists using multiple conditions => True
-        
-        #=====> self.assertTrue(t.deleteRow('test', {'ID': 2, 'name': 'Swamp'}))
-
+        self.assertTrue(t.deleteRow('test', {"ID": ('==', 2), 'name': ('==', 'Swamp')}))
         #Delete a row with a column that does not exist => ColumnDNE_Error
-        self.failUnlessRaises(ColumnDNE_Error, t.deleteRow, 'test', {'junk': 'bar'})
+        self.failUnlessRaises(ColumnDNE_Error, t.deleteRow, 'test', {'junk': ('==', 'bar')})
         #Delete a row in a non-existant table => TableDNE_Error
-        self.failUnlessRaises(TableDNE_Error, t.deleteRow, 'fooey', {'name': 'Swamp'})
+        self.failUnlessRaises(TableDNE_Error, t.deleteRow, 'fooey', {'name': ('==', 'Swamp')})
         #Delete a row with syntax errors => SyntaxError
-        self.failUnlessRaises(SyntaxError, t.deleteRow, 'test', {'col(or': 'RD'})
+        self.failUnlessRaises(SyntaxError, t.deleteRow, 'test', {'col(or': ('==', 'RD')})
         
         #Clean up
         #Close an open DB => True
@@ -112,7 +109,7 @@ class DBTest(unittest.TestCase):
         #Setup
         from errors import SyntaxError, TableDNE_Error
         import db
-        t = db.DB(":memory:")
+        t = db.DB()
         
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
@@ -125,12 +122,38 @@ class DBTest(unittest.TestCase):
         #Close an open DB => True
         self.assertTrue(t.closeDB())
 
+    def test_getColumnNames(self):
+        #Setup
+        import db
+        t = db.DB()
+        #Create a table => True
+        self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
+
+        #Get column names => '(test, ['name', 'color', 'age', 'ID'])'
+        self.assertTrue(t.getColumnNames('test'),"(test, ['name', 'color', 'age', 'ID'])")
+
+        #Clean up
+        #Close an open DB => True
+        self.assertTrue(t.closeDB())
+
+    def test_getDBName(self):
+        #Setup
+        import db
+        t = db.DB()
+
+        #Get name of DB => ':memory'
+        self.assertEquals(t.getDBName(), ':memory:')
+
+        #Clean up
+        #Close an open DB => True
+        self.assertTrue(t.closeDB())
+
     def test_insertRow(self):
         #Setup
         from errors import AdapterMissingError, ConstraintError, TableDNE_Error, SyntaxError, UniqueError
         import db
-        import datetime, time
-        t = db.DB(":memory:")
+        import datetime
+        t = db.DB()
 
         #Create a table => True
         self.assertTrue(t.createTable('MTG', '(name TEXT UNIQUE, color TEXT, count INTEGER CHECK(count > 0), time datetime, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
@@ -158,7 +181,22 @@ class DBTest(unittest.TestCase):
         self.assertTrue(t.closeDB())
 
     def test_paramDict(self):
-        pass
+        #Setup
+        import db
+        t = db.DB()
+
+        #Seperate values with param dict (pair = 0) => "('Count, Name, Number', ':Count, :Name, :Number')"
+        self.assertEquals(t.paramDict({'Name': 'Test', "Number": 9, "Count": 20}), ('Count, Name, Number', ':Count, :Name, :Number'))
+        #Join keys with key lookups and equal comparisons (pair = 1) => "Count=:Count, Name=:Name, Number=:Number"
+        self.assertEquals(t.paramDict({'Name': 'Test', "Number": 9, "Count": 20}, 1), "Count=:Count, Name=:Name, Number=:Number")
+        #Join keys with key and different comparators (pair = 2) => "Count<:Count AND NOT Name=:Name AND Number=:Number"
+        self.assertEquals(t.paramDict({'Name': ('!=', 'Test'), "Number": ("==", 9), "Count": ("<", 20)}, 2), "Count<:Count AND NOT Name=:Name AND Number=:Number")
+        #Join keys with key values and different comparators (pair = 3) => 'Count<20 AND NOT Name="Test" AND Number=9'
+        self.assertEquals(t.paramDict({'Name': ('!=', 'Test'), "Number": ("==", 9), "Count": ("<", 20)}, 3), 'Count<20 AND NOT Name="Test" AND Number=9')
+
+        #Clean up
+        #Close an open DB => True
+        self.assertTrue(t.closeDB())
 
 if __name__ == '__main__':
     unittest.main()
