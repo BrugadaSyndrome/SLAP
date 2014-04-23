@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SQLite3-DB
-LAST UPDATE: 4/21/2014
+LAST UPDATE: 4/22/2014
 VERSION: 0.2.1
 
 DONE:
@@ -18,31 +18,31 @@ DONE:
 + DB.updateRow
 
 == Getters ==
-+ DB.getColumnNames (4/21/2014)
++ DB.getColumnNames (4/22/2014)
 + DB.getConstraints
 + DB.getDBName (4/21/2014)
-+ DB.getRow
++ DB.getRow (4/22/2014)
 + DB.getTableNames (3/26/2014)
 + DB.getValues
 
 == Utilities ==
 + DB.paramDict (4/21/2013)
-+ DB.printTable
-
-== Error Reporting ==
-+ DB.warning
-
 
 TODO:
 - [V 0.2.2] - Once all custom errors are done
-    - remove all references to db.error as it no longer exists
+    - remove all db.warning references
     - unittest FOR ALL FUNCTIONS
         + port function Tests into unittests
+    - Make Enums for paramdict 0,1,2,3
+        + Maybe... TUPLE (0), COMMA(1), KEY(2), DEBUG(3)
 
 - [V 0.2.3]
     - make a logging mode and a debugging mode module
         + logging mode will print each statement out to a file as they are executed
         + debugging mode will print each statement out to the console as they are executed
+    - In try ... except clauses
+        - Change them to print using paramDict option 3 to display actual dictionary values. It will help programmers
+            debug issues easier
 
 -!!!NEED TO MAKE ALL FUNCTIONS SAFE FROM SQL INJECTION ATTACKS!!!-
 
@@ -82,7 +82,7 @@ class DB:
             return True
         except sql.OperationalError:
             if (table in self.getTableNames()):
-                raise DuplicateTableError(table, self.name)
+                raise DuplicateTableError(table, self.getDBName())
             else:
                 raise SyntaxError('''CREATE TABLE {0} {1}'''.format(table, info))
         
@@ -107,7 +107,7 @@ class DB:
             if ("syntax error" in str(e)):
                 raise SyntaxError('''DELETE FROM {0}'''.format(table))
             elif not (table in self.getTableNames()):
-                raise TableDNE_Error(table, self.name)
+                raise TableDNE_Error(table, self.getDBName())
 
 ##    #alterTable(self,
 ##    #           table,   #Table
@@ -134,13 +134,13 @@ class DB:
             if ("syntax error" in str(e)):
                 raise SyntaxError('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values))
             else:
-                raise TableDNE_Error(row, self.name)
+                raise TableDNE_Error(row, self.getDBName())
         #Constraint violation
         except sql.IntegrityError as e:
             if ("constraint failed" in str(e)):
-                raise ConstraintError('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values), self.getConstraints(row)[0][2], row, self.name)
+                raise ConstraintError('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values), self.getConstraints(row)[0][2], row, self.getDBName())
             else:
-                raise UniqueError('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values), self.getConstraints(row)[0][1], row, self.name)
+                raise UniqueError('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values), self.getConstraints(row)[0][1], row, self.getDBName())
         #Adapter missing
         except sql.InterfaceError as e:
             e = str(e)
@@ -148,7 +148,7 @@ class DB:
             end = e.find(' ', begin)
             var_name = e[begin+1:end]
             var_value = info[var_name]
-            raise AdapterMissingError(var_value, row, self.name)
+            raise AdapterMissingError(var_value, row, self.getDBName())
 
     #deleteRow(self,
     #          row,       #Row name
@@ -162,12 +162,12 @@ class DB:
             return True
         except sql.OperationalError as e:
             if ("no such table" in str(e)):
-                raise TableDNE_Error(row, self.name)
+                raise TableDNE_Error(row, self.getDBName())
             elif ("no such column" in str(e)):
                 e = str(e)
                 begin = e.find(':') + 2
                 column = e[begin:]
-                raise ColumnDNE_Error(column, row, self.name)
+                raise ColumnDNE_Error(column, row, self.getDBName())
             elif ("syntax error" in str(e)):
                 raise SyntaxError('''DELETE FROM {0} WHERE {1}'''.format(row, query))
 
@@ -186,16 +186,28 @@ class DB:
         return result
 
     #getRow(self,
-    #       row,       #Row name
-    #       info)      #Dictionary of data involved in the query
-    def getRow(self, row, info):
-        (keys, values) = self.paramDict(info)
-        print '''SELECT * FROM {1} WHERE {0}={2}'''.format(keys, row, info[keys])
-        self.cursor.execute('''SELECT * FROM {1} WHERE {0}={2}'''.format(keys, row, values), info)
-        result = self.cursor.fetchall()
-        if (result == []):
-            self.warning('No data from table ({0}) exists with statement ({1})'.format(row, str(keys)+'='+str(info[keys])))
-        return result
+    #       row,        #Row name
+    #       condition)  #Dictionary of data involved in the query
+    def getRow(self, row, condition):
+        query = self.paramDict(condition, 2)
+        #print '''SELECT * FROM {0} WHERE {1}'''.format(row, query)
+        try:
+            self.cursor.execute('''SELECT * FROM {0} WHERE {1}'''.format(row, query), condition)
+            result = self.cursor.fetchall()
+            return result
+        except sql.OperationalError as e:
+            if ("syntax error" in str(e)):
+                raise SyntaxError('''SELECT * FROM {0} WHERE {1}'''.format(row, query))
+            elif ("no such table" in str(e)):
+                raise TableDNE_Error(row, self.getDBName())
+            elif ("no such column" in str(e)):
+                e = str(e)
+                begin = e.find(':') + 2
+                column = e[begin:]
+                raise ColumnDNE_Error(column, row, self.getDBName())
+            else:
+                print type(e)
+                print e
 
     #updateRow(self,
     #          row,        #Row name
@@ -208,26 +220,6 @@ class DB:
         print '''UPDATE {0} SET {1} WHERE {2}={3}'''.format(row, changes, key, value)
         self.cursor.execute('''UPDATE {0} SET {1} WHERE {2}={3}'''.format(row, changes, key, value), info)
         self.db.commit()
-        return
-
-##    #innerJoin(self,
-##    #          table1,    #
-##    #          column1,   #
-##    #          table2,    #
-##    #          column2,   #
-##    #          condition) #
-##    def innerJoin(self, table1, column1, table2, column2, condition):
-##        print '''SELECT {0}.{1}, {2}.{3} FROM {0} JOIN {2} ON {4}'''.format(table1, column1, table2, column2, condition)
-##        self.cursor.execute('''SELECT {0}.{1}, {2}.{3} FROM {0} JOIN {2} ON {4}'''.format(table1, column1, table2, column2, condition))
-##        results = self.cursor.fetchall()
-##        return results
-
-    #printTable(self,
-    #           table) #Table name
-    def printTable(self, table):
-        cursor = self.cursor.execute('''SELECT * FROM {0}'''.format(table))
-        for row in cursor:
-            print row
         return
 
     ##getTableNames(self)
@@ -246,17 +238,17 @@ class DB:
     #getColumnNames(self,
     #               table) #Table name
     """
-    Returns all the columns name values
+    Returns all the columns name values from a table
     Returns in the format (tableName, [columnNames])
     """
     def getColumnNames(self, table):
         #Get table header from DB
         d = {'name': table}
-        self.cursor.execute("select * from sqlite_master", d)
+        self.cursor.execute("select * from sqlite_master where name=(:name)", d)
         schema = self.cursor.fetchone()
         #Does the table exist?
         if (schema is None):
-            self.error('Failed to find column names: Table does not exist.')
+            raise TableDNE_Error(table, self.getDBName)
         #Find the parenthesis
         lp = schema[4].find('(') + 1
         rp = schema[4].rfind(')')
@@ -318,7 +310,9 @@ class DB:
         elif (pair == 2):
             pairs = ""
             for k in info.keys():
-                if (info[k][0] in OPERATORS):
+                if (str(type(info[k])) != "<type 'tuple'>"):
+                    pairs += k +  "=:" + k + " AND "
+                elif (info[k][0] in OPERATORS):
                     if (info[k][0] == '!='):
                         pairs += "NOT " + k + info[k][0][1] + ":" + k + " AND "
                     elif (info[k][0] == '=='):
@@ -382,7 +376,7 @@ class DB:
             schema = self.cursor.fetchone()
             #Does the table exist?
             if (schema is None):
-                self.error('Failed to find constraints: Table does not exist.')
+                raise TableDNE_Error(table, self.getDBName)
             #Find the parenthesis
             lp = schema[4].find('(') + 1
             rp = schema[4].rfind(')')
@@ -421,20 +415,7 @@ class DB:
             self.db.close()
             return True
         except sql.ProgrammingError:
-            raise DBClosedError(self.name)
-
-##    #error(self,
-##    #      message) #Error message to be displayed
-##    def error(self, message):
-##        self.db.rollback()
-##        #self.closeDB()
-##        raise RuntimeError('### {0} ###'.format(message))
-
-    #warning(self,
-    #        message) #Warning message to be displayed
-    def warning(self, message):
-        print '=== {0}! ==='.format(message)
-        return
+            raise DBClosedError(self.getDBName())
 
     #getDBName(self)
     def getDBName(self):

@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SQLite3-DB
-LAST UPDATE: 4/21/2014
+LAST UPDATE: 4/22/2014
 VERSION: 0.1.0
 
 DONE:
@@ -11,8 +11,9 @@ DONE:
 + test_createTable (3/27/2014)
 + test_deleteRow(4/21/2014)
 + test_dropTable (4/1/2014)
-+ test_getColumnName (4/21/2014)
++ test_getColumnNames (4/22/2014)
 + test_getDBName(4/21/2014)
++ test_getRow(4/22/2014)
 + test_insertRow (4/6/2014)
 + test_paramDict (4/21/2014)
 
@@ -124,13 +125,17 @@ class DBTest(unittest.TestCase):
 
     def test_getColumnNames(self):
         #Setup
+        from errors import TableDNE_Error
         import db
         t = db.DB()
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
 
-        #Get column names => '(test, ['name', 'color', 'age', 'ID'])'
+        #Get column names from an existing table => '(test, ['name', 'color', 'age', 'ID'])'
         self.assertTrue(t.getColumnNames('test'),"(test, ['name', 'color', 'age', 'ID'])")
+        #Get column names from an non-existing table => TableDNE_Error
+        self.failUnlessRaises(TableDNE_Error, t.getColumnNames, 'fooey')
+
 
         #Clean up
         #Close an open DB => True
@@ -139,10 +144,38 @@ class DBTest(unittest.TestCase):
     def test_getDBName(self):
         #Setup
         import db
-        t = db.DB()
+        t = db.DB('someWierdName.sql')
 
         #Get name of DB => ':memory'
-        self.assertEquals(t.getDBName(), ':memory:')
+        self.assertEquals(t.getDBName(), 'someWierdName')
+
+        #Clean up
+        #Close an open DB => True
+        self.assertTrue(t.closeDB())
+
+    def test_getRow(self):
+        #Setup
+        from errors import ColumnDNE_Error, SyntaxError, TableDNE_Error
+        import db
+        t = db.DB()
+
+        #Create a table => True
+        self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
+        #Insert full rows in an existing table => True
+        self.assertTrue(t.insertRow('test', {'name': 'Plain', 'color': 'WH', 'age': 10}))
+        self.assertTrue(t.insertRow('test', {'name': 'Mountain', 'color': 'RD', 'age': 10}))
+        self.assertTrue(t.insertRow('test', {'name': 'Swamp', 'color': 'BK', 'age': 10}))
+
+        #Get with one value
+        self.assertEquals(t.getRow('test', {'ID': 1}), [(u'Plain', u'WH', 10, 1)])
+        #Get with multiple values
+        self.assertEquals(t.getRow('test', {'name': 'Mountain', 'color': 'RD', 'age': 10}), [(u'Mountain', u'RD', 10, 2)])
+        #Get with syntax error => SyntaxError
+        self.failUnlessRaises(SyntaxError, t.getRow, 'test', {'n#ame': 'Mountain', 'col&or': 'RD', 'ag@e': 10})
+        #Get with non-existing table => TableDNE_Error
+        self.failUnlessRaises(TableDNE_Error, t.getRow, 'fooey', {'name': 'Mountain', 'color': 'RD', 'age': 10})
+        #Get with non-existing column => ColumnDNE_Error
+        self.failUnlessRaises(ColumnDNE_Error, t.getRow, 'test', {'junk': 'bar'})
 
         #Clean up
         #Close an open DB => True
@@ -190,7 +223,7 @@ class DBTest(unittest.TestCase):
         #Join keys with key lookups and equal comparisons (pair = 1) => "Count=:Count, Name=:Name, Number=:Number"
         self.assertEquals(t.paramDict({'Name': 'Test', "Number": 9, "Count": 20}, 1), "Count=:Count, Name=:Name, Number=:Number")
         #Join keys with key and different comparators (pair = 2) => "Count<:Count AND NOT Name=:Name AND Number=:Number"
-        self.assertEquals(t.paramDict({'Name': ('!=', 'Test'), "Number": ("==", 9), "Count": ("<", 20)}, 2), "Count<:Count AND NOT Name=:Name AND Number=:Number")
+        self.assertEquals(t.paramDict({'Name': ('!=', 'Test'), "Number": 9, "Count": ("<", 20)}, 2), "Count<:Count AND NOT Name=:Name AND Number=:Number")
         #Join keys with key values and different comparators (pair = 3) => 'Count<20 AND NOT Name="Test" AND Number=9'
         self.assertEquals(t.paramDict({'Name': ('!=', 'Test'), "Number": ("==", 9), "Count": ("<", 20)}, 3), 'Count<20 AND NOT Name="Test" AND Number=9')
 

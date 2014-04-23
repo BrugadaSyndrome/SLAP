@@ -18,7 +18,6 @@ DONE:
 TODO:
     
 """
-import sqlite3 as sql
 
 class DBError(Exception):
     pass
