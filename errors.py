@@ -38,7 +38,7 @@ class ColumnDNE_Error(DBError):
         self.db_name = db_name
 
     def __str__(self):
-        return repr("Column ({0}) does not exist in table ({1}) in DB ({2}).".format(self.table, self.dne_column, self.db_name))
+        return repr("Column ({0}) does not exist in table ({1}) in DB ({2}).".format(self.dne_column, self.table, self.db_name))
 
 class ConstraintError(DBError):
     def __init__(self, query, constraints, table, db_name):

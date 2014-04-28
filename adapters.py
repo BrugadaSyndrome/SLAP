@@ -10,11 +10,11 @@ DONE:
 + extract_datetime(float) => datetime.datetime.now() (3/23/2014)
 
 TODO:
--!! Encrypt all personal data put into db !!
+- [V 0.1.1]
+    - Person/Name Class(first, middle, last)
 
-- Name (first, middle, last)
-- 
-
+- [V 0.2.0]
+    - !! Encrypt all personal data put into db !!
 """
 
 import sqlite3 as sql

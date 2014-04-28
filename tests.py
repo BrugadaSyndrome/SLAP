@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SQLite3-DB
-LAST UPDATE: 4/22/2014
+LAST UPDATE: 4/26/2014
 VERSION: 0.1.0
 
 DONE:
@@ -9,11 +9,12 @@ DONE:
 + test_clearTable (3/27/2014)
 + test_closeDB (3/27/2104)
 + test_createTable (3/27/2014)
-+ test_deleteRow(4/21/2014)
-+ test_dropTable (4/1/2014)
++ test_deleteRow (4/21/2014)
++ test_dropTable (4/26/2014)
 + test_getColumnNames (4/22/2014)
-+ test_getDBName(4/21/2014)
-+ test_getRow(4/22/2014)
++ test_getDBName (4/21/2014)
++ test_getRow (4/22/2014)
++ test_getValues (4/28/2014)
 + test_insertRow (4/6/2014)
 + test_paramDict (4/21/2014)
 
@@ -22,7 +23,6 @@ TODO:
 """
 
 import unittest
-import sys
 
 class DBTest(unittest.TestCase):
 
@@ -108,7 +108,7 @@ class DBTest(unittest.TestCase):
 
     def test_dropTable(self):
         #Setup
-        from errors import SyntaxError, TableDNE_Error
+        from errors import SyntaxError
         import db
         t = db.DB()
         
@@ -118,6 +118,10 @@ class DBTest(unittest.TestCase):
         self.assertTrue(t.dropTable('test'))
         #Drop an non-existing table => True
         self.assertTrue(t.dropTable('fooey'))
+        #Create a table => True
+        self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
+        #Drop an existing table with syntax error => SyntaxError
+        self.failUnlessRaises(SyntaxError, t.dropTable, 't#st')
         
         #Clean up
         #Close an open DB => True
@@ -132,10 +136,9 @@ class DBTest(unittest.TestCase):
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
 
         #Get column names from an existing table => '(test, ['name', 'color', 'age', 'ID'])'
-        self.assertTrue(t.getColumnNames('test'),"(test, ['name', 'color', 'age', 'ID'])")
+        self.assertTrue(t.getColumnNames('test'), "(test, ['name', 'color', 'age', 'ID'])")
         #Get column names from an non-existing table => TableDNE_Error
         self.failUnlessRaises(TableDNE_Error, t.getColumnNames, 'fooey')
-
 
         #Clean up
         #Close an open DB => True
@@ -144,10 +147,10 @@ class DBTest(unittest.TestCase):
     def test_getDBName(self):
         #Setup
         import db
-        t = db.DB('someWierdName.sql')
+        t = db.DB('someWeirdName.sql')
 
-        #Get name of DB => ':memory'
-        self.assertEquals(t.getDBName(), 'someWierdName')
+        #Get name of DB => 'someWeirdName'
+        self.assertEquals(t.getDBName(), 'someWeirdName')
 
         #Clean up
         #Close an open DB => True
@@ -158,7 +161,6 @@ class DBTest(unittest.TestCase):
         from errors import ColumnDNE_Error, SyntaxError, TableDNE_Error
         import db
         t = db.DB()
-
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
         #Insert full rows in an existing table => True
@@ -176,6 +178,33 @@ class DBTest(unittest.TestCase):
         self.failUnlessRaises(TableDNE_Error, t.getRow, 'fooey', {'name': 'Mountain', 'color': 'RD', 'age': 10})
         #Get with non-existing column => ColumnDNE_Error
         self.failUnlessRaises(ColumnDNE_Error, t.getRow, 'test', {'junk': 'bar'})
+
+        #Clean up
+        #Close an open DB => True
+        self.assertTrue(t.closeDB())
+
+    def test_getValues(self):
+        #Setup
+        from errors import ColumnDNE_Error, SyntaxError, TableDNE_Error
+        import db
+        t = db.DB()
+        #Create a table => True
+        self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
+        #Insert full rows in an existing table => True
+        self.assertTrue(t.insertRow('test', {'name': 'Plain', 'color': 'WH', 'age': 10}))
+        self.assertTrue(t.insertRow('test', {'name': 'Mountain', 'color': 'RD', 'age': 10}))
+        self.assertTrue(t.insertRow('test', {'name': 'Swamp', 'color': 'BK', 'age': 10}))
+
+        #Get values with one key => [(1, u'Plain')]
+        self.assertEquals(t.getValues('test', 'ID, name', {'ID': 1}), [(1, u'Plain')])
+        #Get values with multiple keys => []
+        self.assertEquals(t.getValues('test', 'ID, name', {'ID': 1, 'color': ('!=', 'WH')}), [])
+        #Get values with a non-existing column => ColumnDNE_Error
+        self.failUnlessRaises(ColumnDNE_Error, t.getValues, 'test', 'ID, fooey', {'ID': 1})
+        #Get values with a syntax error => SyntaxError
+        self.failUnlessRaises(SyntaxError, t.getValues, 'test', 'I@D', {'ID': 'hello'})
+        #Get values with a non-existing table => TableDNE_Error
+        self.failUnlessRaises(TableDNE_Error, t.getValues, 'fooey', 'ID', {'ID': 'hello'})
 
         #Clean up
         #Close an open DB => True
@@ -233,4 +262,3 @@ class DBTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    

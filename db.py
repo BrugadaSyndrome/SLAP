@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SQLite3-DB
-LAST UPDATE: 4/22/2014
+LAST UPDATE: 4/26/2014
 VERSION: 0.2.1
 
 DONE:
@@ -13,7 +13,7 @@ DONE:
 + DB.clearTable (4/1/2014)
 + DB.closeDB (3/27/2014)
 + DB.deleteRow (4/21/2014)
-+ DB.dropTable (4/1/2014)
++ DB.dropTable (4/26/2014)
 + DB.insertRow (4/6/2014)
 + DB.updateRow
 
@@ -23,18 +23,17 @@ DONE:
 + DB.getDBName (4/21/2014)
 + DB.getRow (4/22/2014)
 + DB.getTableNames (3/26/2014)
-+ DB.getValues
++ DB.getValues (4/28/2014)
 
 == Utilities ==
 + DB.paramDict (4/21/2013)
 
 TODO:
 - [V 0.2.2] - Once all custom errors are done
-    - remove all db.warning references
     - unittest FOR ALL FUNCTIONS
         + port function Tests into unittests
     - Make Enums for paramdict 0,1,2,3
-        + Maybe... TUPLE (0), COMMA(1), KEY(2), DEBUG(3)
+        + Maybe... TUPLE(0), COMMA(1), KEY(2), DEBUG(3)
 
 - [V 0.2.3]
     - make a logging mode and a debugging mode module
@@ -46,9 +45,6 @@ TODO:
 
 -!!!NEED TO MAKE ALL FUNCTIONS SAFE FROM SQL INJECTION ATTACKS!!!-
 
--PROPERLY TEST INNER JOIN FUNCTION TO PROVE FUNCTIONALITY
-    -WRITE COMMENTS ON PARAMETERS
-
 -MODIFY ALTER TABLE FUNCTION TO BE ABLE TO DROP TABLE AND RENAME COLUMNS BY:
     -HAVING IT COPY INFO TO NEW TABLE AND THEN RENAMING THE TABLE WHEN DROPPING A COLUMN
     -HAVING IT COPY INFO TO NEW TABLE BUT RENAME THE COLUMN THAT NEEDS TO BE RENAMED
@@ -59,6 +55,7 @@ from errors import *
 import sqlite3 as sql
 
 OPERATORS = ['==', '!=', '<', '<=', '>', '>=']
+TUPLE, COMMA, KEY, DEBUG = 0, 1, 2, 3
 
 class DB:
     #__int__(self,
@@ -90,9 +87,13 @@ class DB:
     #          table) #Table name
     def dropTable(self, table):
         #print '''DROP TABLE IF EXISTS {0}'''.format(table)
-        self.cursor.execute('''DROP TABLE IF EXISTS {0}'''.format(table))
-        self.db.commit()
-        return True
+        try:
+            self.cursor.execute('''DROP TABLE IF EXISTS {0}'''.format(table))
+            self.db.commit()
+            return True
+        except sql.OperationalError as e:
+            if ("syntax error" in str(e)):
+                raise SyntaxError('''DROP TABLE IF EXISTS {0}'''.format(table))
 
     #clearTable(self,
     #           table) #Table name
@@ -173,17 +174,25 @@ class DB:
 
     #getValues(self,
     #          row,       #Row name
-    #          info,      #Dictionary of data involved in the query
-    #          condition) #Dictionary of a single item with a certain value to be found in DB
+    #          info,      #CSV string with columns to retrieve data from
+    #          condition) #Dictionary of search requirements
     def getValues(self, row, info, condition):
-        (keys, values) = self.paramDict(info)
-        (key, value) = self.paramDict(condition)
-        print '''SELECT ({0}) FROM {1} WHERE {2}={3}'''.format(keys, row, key, condition[key])
-        self.cursor.execute('''SELECT {0} FROM {1} WHERE {2}={3}'''.format(keys, row, key, value), info)
-        result = self.cursor.fetchall()
-        if (result == []):
-            self.warning('No data from table ({0}) exists with statement ({1}={2})'.format(row, key, condition[key]))
-        return result
+        query = self.paramDict(condition, 2)
+        print '''SELECT ({0}) FROM {1} WHERE {2}'''.format(info, row, query)
+        try:
+            self.cursor.execute('''SELECT {0} FROM {1} WHERE {2}'''.format(info, row, query), condition)
+            result = self.cursor.fetchall()
+            return result
+        except sql.OperationalError as e:
+            if ("no such column" in str(e)):
+                e = str(e)
+                begin = e.find(':') + 2
+                column = e[begin:]
+                raise ColumnDNE_Error(column, row, self.getDBName())
+            elif ("syntax error" in str(e)):
+                raise SyntaxError('''SELECT ({0}) FROM {1} WHERE {2}'''.format(info, row, query))
+            elif ("no such table" in str(e)):
+                raise TableDNE_Error(row, self.getDBName())
 
     #getRow(self,
     #       row,        #Row name
