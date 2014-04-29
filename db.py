@@ -19,23 +19,22 @@ DONE:
 
 == Getters ==
 + DB.getColumnNames (4/22/2014)
-+ DB.getConstraints
++ DB.getConstraints (4/28/2014)
 + DB.getDBName (4/21/2014)
 + DB.getRow (4/22/2014)
 + DB.getTableNames (3/26/2014)
 + DB.getValues (4/28/2014)
 
 == Utilities ==
-+ DB.paramDict (4/21/2013)
++ DB.paramDict (4/28/2013)
 
 TODO:
 - [V 0.2.2] - Once all custom errors are done
     - unittest FOR ALL FUNCTIONS
         + port function Tests into unittests
-    - Make Enums for paramdict 0,1,2,3
-        + Maybe... TUPLE(0), COMMA(1), KEY(2), DEBUG(3)
 
 - [V 0.2.3]
+    - modify getColumnNames to be more like getConstraints in that it can get one table or the every tables info
     - make a logging mode and a debugging mode module
         + logging mode will print each statement out to a file as they are executed
         + debugging mode will print each statement out to the console as they are executed
@@ -155,7 +154,7 @@ class DB:
     #          row,       #Row name
     #          condition) #Condition to select data 
     def deleteRow(self, row, condition):
-        query = self.paramDict(condition, 2)
+        query = self.paramDict(condition, KEY)
         #print '''DELETE FROM {0} WHERE {1}'''.format(row, query)
         try:
             self.cursor.execute('''DELETE FROM {0} WHERE {1}'''.format(row, query), condition)
@@ -177,8 +176,8 @@ class DB:
     #          info,      #CSV string with columns to retrieve data from
     #          condition) #Dictionary of search requirements
     def getValues(self, row, info, condition):
-        query = self.paramDict(condition, 2)
-        print '''SELECT ({0}) FROM {1} WHERE {2}'''.format(info, row, query)
+        query = self.paramDict(condition, KEY)
+        #print '''SELECT ({0}) FROM {1} WHERE {2}'''.format(info, row, query)
         try:
             self.cursor.execute('''SELECT {0} FROM {1} WHERE {2}'''.format(info, row, query), condition)
             result = self.cursor.fetchall()
@@ -198,7 +197,7 @@ class DB:
     #       row,        #Row name
     #       condition)  #Dictionary of data involved in the query
     def getRow(self, row, condition):
-        query = self.paramDict(condition, 2)
+        query = self.paramDict(condition, KEY)
         #print '''SELECT * FROM {0} WHERE {1}'''.format(row, query)
         try:
             self.cursor.execute('''SELECT * FROM {0} WHERE {1}'''.format(row, query), condition)
@@ -224,7 +223,7 @@ class DB:
     #          condition)  #Dictionary of a single item with a certain value to be found in DB
     def updateRow(self, row, info, condition):
         print self.paramDict(info)
-        changes = self.paramDict(info, 1)
+        changes = self.paramDict(info, COMMA)
         (key, value) = self.paramDict(condition)
         print '''UPDATE {0} SET {1} WHERE {2}={3}'''.format(row, changes, key, value)
         self.cursor.execute('''UPDATE {0} SET {1} WHERE {2}={3}'''.format(row, changes, key, value), info)
@@ -280,27 +279,26 @@ class DB:
 
     #paramDict(self,
     #          info,    #Dictionary to parse
-    #          pair)    #Pair values (ie.key=:key) when true.
+    #          pair)    #How to pair values
     """
     Parameterizes a dictionary into appropriate string values
 
     #db.insertRow()
-    Return values look like this when pair = 0:
-    key:    "key0, ..., keyX"
-    values: ":key0, ..., :keyX"
+    Return values look like this when pair = TUPLE:
+    pairs = ("key0, ..., keyX", ":key0, ..., :keyX")
 
-    Rturn value looks like this when pair = 1:
+    Rturn value looks like this when pair = COMMA:
     pairs = "key0=:key0, ... , keyX=:keyX"
 
-    Return value looks like this when pair = 2:
+    Return value looks like this when pair = KEY:
     pairs = "key0<=:key0, key1!=:key1, ... , keyX<:keyX"
 
-    Return value looks like this when pair = 3:
+    Return value looks like this when pair = DEBUG:
     pairs = "key0<=value0, key1!=value1, ... , keyX<valueX"
 
 
     """
-    def paramDict(self, info, pair=0):
+    def paramDict(self, info, pair=TUPLE):
         if (pair == 0):
             keys = ""
             values = ""
@@ -310,13 +308,13 @@ class DB:
             keys = keys[:len(keys)-2]
             values = values[:len(values)-2]
             return (keys, values)
-        elif (pair == 1):
+        elif (pair == COMMA):
             pairs = ""
             for k in info.keys():
                 pairs += k + "=:" + k + ", "
             pairs = pairs[:len(pairs)-2]
             return pairs
-        elif (pair == 2):
+        elif (pair == KEY):
             pairs = ""
             for k in info.keys():
                 if (str(type(info[k])) != "<type 'tuple'>"):
@@ -333,7 +331,7 @@ class DB:
                     print '{0} is not a valid operator'.format(info[k][0])
             pairs = pairs[:len(pairs)-5]
             return pairs
-        elif (pair == 3):
+        elif (pair == DEBUG):
             pairs = ""
             for k in info.keys():
                 if (type(info[k][1]) is str):

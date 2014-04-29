@@ -12,13 +12,16 @@ DONE:
 + test_deleteRow (4/21/2014)
 + test_dropTable (4/26/2014)
 + test_getColumnNames (4/22/2014)
++ test_getConstraints (4/28/2014)
 + test_getDBName (4/21/2014)
 + test_getRow (4/22/2014)
 + test_getValues (4/28/2014)
 + test_insertRow (4/6/2014)
 + test_paramDict (4/21/2014)
++ test_updateRow ()
 
 TODO:
+    - Start test_updateRow
 
 """
 
@@ -135,10 +138,31 @@ class DBTest(unittest.TestCase):
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
 
-        #Get column names from an existing table => '(test, ['name', 'color', 'age', 'ID'])'
-        self.assertTrue(t.getColumnNames('test'), "(test, ['name', 'color', 'age', 'ID'])")
+        #Get column names from an existing table => (test, ['name', 'color', 'age', 'ID']
+        self.assertEquals(t.getColumnNames('test'), ('test', ['name', 'color', 'age', 'ID']))
         #Get column names from an non-existing table => TableDNE_Error
         self.failUnlessRaises(TableDNE_Error, t.getColumnNames, 'fooey')
+
+        #Clean up
+        #Close an open DB => True
+        self.assertTrue(t.closeDB())
+
+    def test_getConstraints(self):
+        #Setup
+        from errors import TableDNE_Error
+        import db
+        t = db.DB()
+        #Create a table => True
+        self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER CHECK(age > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
+        #Create a table => True
+        self.assertTrue(t.createTable('test2', '(name TEXT, color TEXT, age INTEGER CHECK(age < 21), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
+
+        #Get constraints on an existing table => [('test', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age > 0)'])]
+        self.assertEquals(t.getConstraints('test'), [('test', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age > 0)'])])
+        #Get constraints on an non-existing table => TableDNE_Error
+        self.failUnlessRaises(TableDNE_Error, t.getConstraints, 'foobar')
+        #Get constraints on all existing tables in a DB => [('test', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age > 0)']), ('test2', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age < 21)'])]
+        self.assertEquals(t.getConstraints(), [('test', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age > 0)']), ('test2', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age < 21)'])])
 
         #Clean up
         #Close an open DB => True
@@ -259,6 +283,9 @@ class DBTest(unittest.TestCase):
         #Clean up
         #Close an open DB => True
         self.assertTrue(t.closeDB())
+
+    def test_updateRow(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()
