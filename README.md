@@ -1,6 +1,6 @@
 SQLite3-DB
 ==========
-Written in Python 2.7.5 as a wrapper class for sqlite3 Python module library.
+Written in Python 2.7 as a wrapper class for sqlite3 Python module library.
 
 
 CONTRIBUTERS
