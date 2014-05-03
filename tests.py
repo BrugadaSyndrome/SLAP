@@ -1,8 +1,8 @@
 """
 AUTHOR: COBY JOHNSON
-PROJECT: SQLite3-DB
-LAST UPDATE: 4/26/2014
-VERSION: 0.1.0
+PROJECT: SLAP (Sql-Lite wrApper in Python)
+LAST UPDATE: 5/3/2014
+VERSION: 0.0.1
 
 DONE:
 == TESTS ==
@@ -12,16 +12,15 @@ DONE:
 + test_deleteRow (4/21/2014)
 + test_dropTable (4/26/2014)
 + test_getColumnNames (4/22/2014)
-+ test_getConstraints (4/28/2014)
++ test_getConstraints (5/3/2014)
 + test_getDBName (4/21/2014)
 + test_getRow (4/22/2014)
 + test_getValues (4/28/2014)
 + test_insertRow (4/6/2014)
-+ test_paramDict (4/21/2014)
-+ test_updateRow ()
++ test_parameterize (5/3/2014)
++ test_updateRow (5/3/2014)
 
 TODO:
-    - Start test_updateRow
 
 """
 
@@ -161,8 +160,6 @@ class DBTest(unittest.TestCase):
         self.assertEquals(t.getConstraints('test'), [('test', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age > 0)'])])
         #Get constraints on an non-existing table => TableDNE_Error
         self.failUnlessRaises(TableDNE_Error, t.getConstraints, 'foobar')
-        #Get constraints on all existing tables in a DB => [('test', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age > 0)']), ('test2', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age < 21)'])]
-        self.assertEquals(t.getConstraints(), [('test', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age > 0)']), ('test2', ['ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT'], ['age INTEGER CHECK(age < 21)'])])
 
         #Clean up
         #Close an open DB => True
@@ -266,26 +263,56 @@ class DBTest(unittest.TestCase):
         #Close an open DB => True
         self.assertTrue(t.closeDB())
 
-    def test_paramDict(self):
+    def test_parameterize(self):
         #Setup
         import db
+        import parameterize as param
         t = db.DB()
 
-        #Seperate values with param dict (pair = 0) => "('Count, Name, Number', ':Count, :Name, :Number')"
-        self.assertEquals(t.paramDict({'Name': 'Test', "Number": 9, "Count": 20}), ('Count, Name, Number', ':Count, :Name, :Number'))
-        #Join keys with key lookups and equal comparisons (pair = 1) => "Count=:Count, Name=:Name, Number=:Number"
-        self.assertEquals(t.paramDict({'Name': 'Test', "Number": 9, "Count": 20}, 1), "Count=:Count, Name=:Name, Number=:Number")
-        #Join keys with key and different comparators (pair = 2) => "Count<:Count AND NOT Name=:Name AND Number=:Number"
-        self.assertEquals(t.paramDict({'Name': ('!=', 'Test'), "Number": 9, "Count": ("<", 20)}, 2), "Count<:Count AND NOT Name=:Name AND Number=:Number")
-        #Join keys with key values and different comparators (pair = 3) => 'Count<20 AND NOT Name="Test" AND Number=9'
-        self.assertEquals(t.paramDict({'Name': ('!=', 'Test'), "Number": ("==", 9), "Count": ("<", 20)}, 3), 'Count<20 AND NOT Name="Test" AND Number=9')
+        #Seperate values with param dict  => "('Count, Name, Number', ':Count, :Name, :Number')"
+        self.assertEquals(param.paramTuple({'Name': 'Test', "Number": 9, "Count": 20}), ('Count, Name, Number', ':Count, :Name, :Number'))
+        #Join keys with key lookups and equal comparisons  => "Count=:Count, Name=:Name, Number=:Number"
+        self.assertEquals(param.paramComma({'Name': 'Test', "Number": 9, "Count": 20}), "Count=:Count, Name=:Name, Number=:Number")
+        #Join keys with key and different comparators => "Count<:Count AND NOT Name=:Name AND Number=:Number"
+        self.assertEquals(param.paramKey({'Name': ('!=', 'Test'), "Number": 9, "Count": ("<", 20)}), "Count<:Count AND NOT Name=:Name AND Number=:Number")
+        #Join keys with key values and different comparators => 'Count<20 AND NOT Name="Test" AND Number=9'
+        self.assertEquals(param.paramDebug({'Name': ('!=', 'Test'), "Number": ("==", 9), "Count": ("<", 20)}), 'Count<20 AND NOT Name="Test" AND Number=9')
 
         #Clean up
         #Close an open DB => True
         self.assertTrue(t.closeDB())
 
     def test_updateRow(self):
-        pass
+        #Setup
+        from errors import ColumnDNE_Error, SyntaxError, TableDNE_Error
+        import db
+        t = db.DB()
+        #Create a table => True
+        self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
+        #Insert full rows in an existing table => True
+        self.assertTrue(t.insertRow('test', {'name': 'Plain', 'color': 'WH', 'age': 10}))
+        self.assertTrue(t.insertRow('test', {'name': 'Mountain', 'color': 'RD', 'age': 10}))
+        self.assertTrue(t.insertRow('test', {'name': 'Swamp', 'color': 'BK', 'age': 10}))
+
+        #Update one column => True
+        self.assertTrue(t.updateRow('test', {'name': 'Forest'}, {'ID': 1}))
+        #Update one column with multiple constraints => True
+        self.assertTrue(t.updateRow('test', {'name': 'Plain'}, {'ID': 1, 'age': 10}))
+        #Update multiple columns => True
+        self.assertTrue(t.updateRow('test', {'name': 'Island', 'color': 'BL'}, {'ID': 1}))
+        #Update multiple columns with multiple constraints => True
+        self.assertTrue(t.updateRow('test', {'name': 'Island', 'color': 'BL'}, {'ID': 1, 'age': ('<=', 10)}))
+        #Update with non-existing table => TableDNE_Error
+        self.failUnlessRaises(TableDNE_Error, t.updateRow, 'tut', {'name': 'Island', 'color': 'BL'}, {'ID': 1, 'age': ('<=', 10)})
+        #Update with non-existing column => ColumnDNE_Error
+        self.failUnlessRaises(ColumnDNE_Error, t.updateRow, 'test', {'nam*e': 'Island', 'color': 'BL'}, {'ID': 1, 'age': ('<=', 10)})
+        #Update with syntax error => SyntaxError
+        self.failUnlessRaises(SyntaxError, t.updateRow,'test', {'nam#e': 'Island', 'color': 'BL'}, {'ID': 1, 'age': ('<=', 10)})
+
+
+        #Clean up
+        #Close an open DB => True
+        self.assertTrue(t.closeDB())
 
 if __name__ == '__main__':
     unittest.main()

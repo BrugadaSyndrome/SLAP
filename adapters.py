@@ -1,8 +1,8 @@
 """
 AUTHOR: COBY JOHNSON
-PROJECT: SQLite3-DB
-LAST UPDATE: 3/23/2014
-VERSION: 0.1.0
+PROJECT: SLAP (Sql-Lite wrApper in Python)
+LAST UPDATE: 5/3/2014
+VERSION: 0.0.1
 
 DONE:
 == Adaptors ==
@@ -10,11 +10,12 @@ DONE:
 + extract_datetime(float) => datetime.datetime.now() (3/23/2014)
 
 TODO:
-- [V 0.1.1]
+- [V 0.0.2]
     - Person/Name Class(first, middle, last)
 
-- [V 0.2.0]
+- [V 0.0.3]
     - !! Encrypt all personal data put into db !!
+
 """
 
 import sqlite3 as sql

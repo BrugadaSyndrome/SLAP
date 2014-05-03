@@ -1,4 +1,4 @@
-SQLite3-DB
+SLAP (Sql-Lite wrApper in Python)
 ==========
 Written in Python 2.7 as a wrapper class for sqlite3 Python module library.
 
@@ -14,4 +14,5 @@ FILES
 + adapters.py (Datatype adapters for sqlite3 db module)
 + db.py (Main)
 + errors.py (Custom error methods)
++ parameterize.py (Utility to help parameterize dictionaries)
 + tests.py (Testing done using the unittest module)
