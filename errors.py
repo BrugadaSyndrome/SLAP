@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
-LAST UPDATE: 5/3/2014
+LAST UPDATE: 5/4/2014
 VERSION: 0.0.1
 
 DONE:
@@ -9,11 +9,11 @@ DONE:
 + AdapterMissingError (4/6/2014)
 + DBClosedError (3/27/2014)
 + ColumnDNE_Error (4/6/2014)
-+ ConstraintError (4/6/2014)
++ ConstraintError (5/4/2014)
 + DuplicateTableError (3/27/2014)
 + SyntaxError (3/27/2014)
 + TableDNE_Error (4/6/2014)
-+ UniqueError (4/6/2014)
++ UniqueError (5/4/2014)
 
 TODO:
     
@@ -48,7 +48,7 @@ class ConstraintError(DBError):
         self.db_name = db_name
 
     def __str__(self):
-        return repr("Table ({0}) in DB ({1}) has constraints:\n {2}\n that are being violated with the query:\n {3}". format(self.table, self.db_name, self.constraints, self.query))
+        return "Table ({0}) in DB ({1}) has constraints:\n {2}\n that are being violated with the query:\n {3}". format(self.table, self.db_name, self.constraints, self.query)
 
 class DBClosedError(DBError):
     def __init__(self, table):
@@ -88,4 +88,4 @@ class UniqueError(DBError):
         self.db_name = db_name
 
     def __str__(self):
-        return repr("Table ({0}) in DB ({1}) has unique fields:\n {2}\n that are being violated with the query:\n {3}". format(self.table, self.db_name, self.constraints, self.query))
+        return "Table ({0}) in DB ({1}) has unique fields:\n {2}\n that are being violated with the query:\n {3}". format(self.table, self.db_name, self.constraints, self.query)

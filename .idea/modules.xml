@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/SQLite3-DB.iml" filepath="$PROJECT_DIR$/.idea/SQLite3-DB.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/SLAP.iml" filepath="$PROJECT_DIR$/.idea/SLAP.iml" />
     </modules>
   </component>
 </project>

@@ -1,11 +1,12 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
-LAST UPDATE: 5/3/2014
+LAST UPDATE: 5/4/2014
 VERSION: 0.0.2
 
 DONE:
 + paramTuple (5/3/2014)
++ paramTupleDebug (5/4/2014)
 + paramComma (5/3/2014)
 + paramKey (5/3/2014)
 + paramDebug (5/3/2014)
@@ -25,6 +26,19 @@ def paramTuple(info):
     for k in info.keys():
         keys += k + ", "
         values += ":" + k + ", "
+    keys = keys[:len(keys)-2]
+    values = values[:len(values)-2]
+    return (keys, values)
+
+#paramTupleDebug(self,
+#                info)    #Dictionary to parse
+# return ("key0, ..., keyX", "value0, ..., valueX")
+def paramTupleDebug(info):
+    keys = ""
+    values = ""
+    for k in info.keys():
+        keys += k + ", "
+        values += str(info[k]) + ", "
     keys = keys[:len(keys)-2]
     values = values[:len(values)-2]
     return (keys, values)

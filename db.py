@@ -1,12 +1,12 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
-LAST UPDATE: 5/3/2014
-VERSION: 0.2.2
+LAST UPDATE: 5/4/2014
+VERSION: 0.2.3
 
 DONE:
 == Constructors / Destructors ==
-+ DB.init (3/26/2014)
++ DB.init (5/4/2014)
 
 == Modify Table (Setters) ==
 + DB.createTable (3/27/2014)
@@ -14,34 +14,28 @@ DONE:
 + DB.closeDB (3/27/2014)
 + DB.deleteRow (4/21/2014)
 + DB.dropTable (4/26/2014)
-+ DB.insertRow (4/6/2014)
-+ DB.updateRow (5/3/2014)
++ DB.insertRow (5/4/2014)
++ DB.updateRow (5/4/2014)
 
 == Getters ==
 + DB.getColumnNames (4/22/2014)
 + DB.getConstraints (5/3/2014)
 + DB.getDBName (4/21/2014)
-+ DB.getRow (4/22/2014)
++ DB.getRow (5/4/2014)
 + DB.getTableNames (3/26/2014)
-+ DB.getValues (4/28/2014)
++ DB.getValues (5/4/2014)
 
 TODO:
-- [V 0.2.3] - Refactor paramDict
-    - In try ... except clauses
-        + Change them to print using paramDict option 3 to display actual dictionary values. It will help programmers
-            debug issues easier
-
 - [V 0.2.4] - Logging Mode
     - make a logging mode and a debugging mode module
         + logging mode will print each statement out to a file as they are executed
         + debugging mode will print each statement out to the console as they are executed
 
+- [V 0.2.5] - Alter Table
+    - Make an alterTable method
+        + Extend the functionality to allow renaming tables and dropping tables
 
 -!!!NEED TO MAKE ALL FUNCTIONS SAFE FROM SQL INJECTION ATTACKS!!!-
-
--MODIFY ALTER TABLE FUNCTION TO BE ABLE TO DROP TABLE AND RENAME COLUMNS BY:
-    -HAVING IT COPY INFO TO NEW TABLE AND THEN RENAMING THE TABLE WHEN DROPPING A COLUMN
-    -HAVING IT COPY INFO TO NEW TABLE BUT RENAME THE COLUMN THAT NEEDS TO BE RENAMED
 
 """
 
@@ -54,11 +48,12 @@ class DB:
     #        name) #Name of the DB to be created
     def __init__(self, name=":memory:"):
         #Data members
-        ti = name.rfind('.')
-        if (ti != -1):
-            self.name = name[:ti]
+        i = name.rfind('.')
+        if (i != -1):
+            self.name = name[:i]
         else:
             self.name = name
+
         #Load DB
         self.db = sql.connect(name)
         #Create DB cursor
@@ -124,6 +119,7 @@ class DB:
                 raise TableDNE_Error(row, self.getDBName())
         #Constraint violation
         except sql.IntegrityError as e:
+            (keys, values) = param.paramTupleDebug(info)
             if ("constraint failed" in str(e)):
                 raise ConstraintError('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values), self.getConstraints(row)[0][2], row, self.getDBName())
             else:
@@ -156,6 +152,7 @@ class DB:
                 column = e[begin:]
                 raise ColumnDNE_Error(column, row, self.getDBName())
             elif ("syntax error" in str(e)):
+                query = param.paramDebug(condition)
                 raise SyntaxError('''DELETE FROM {0} WHERE {1}'''.format(row, query))
 
     #getValues(self,
@@ -176,6 +173,7 @@ class DB:
                 column = e[begin:]
                 raise ColumnDNE_Error(column, row, self.getDBName())
             elif ("syntax error" in str(e)):
+                query = param.paramDebug(condition)
                 raise SyntaxError('''SELECT ({0}) FROM {1} WHERE {2}'''.format(info, row, query))
             elif ("no such table" in str(e)):
                 raise TableDNE_Error(row, self.getDBName())
@@ -192,6 +190,7 @@ class DB:
             return result
         except sql.OperationalError as e:
             if ("syntax error" in str(e)):
+                query = param.paramDebug(condition)
                 raise SyntaxError('''SELECT * FROM {0} WHERE {1}'''.format(row, query))
             elif ("no such table" in str(e)):
                 raise TableDNE_Error(row, self.getDBName())
@@ -215,6 +214,7 @@ class DB:
             return True
         except sql.OperationalError as e:
             if ("syntax error" in str(e)):
+                query = param.paramDebug(condition)
                 raise SyntaxError('''UPDATE {0} SET {1} WHERE {2}'''.format(row, changes, query))
             elif ("no such table" in str(e)):
                 raise TableDNE_Error(row, self.getDBName())
@@ -331,7 +331,7 @@ class DB:
 
 def main():
     db = DB()
-    print db.getDBName()
+
     db.closeDB()
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
-LAST UPDATE: 5/3/2014
+LAST UPDATE: 5/4/2014
 VERSION: 0.0.1
 
 DONE:
@@ -13,7 +13,7 @@ DONE:
 + test_dropTable (4/26/2014)
 + test_getColumnNames (4/22/2014)
 + test_getConstraints (5/3/2014)
-+ test_getDBName (4/21/2014)
++ test_getDBName (5/4/2014)
 + test_getRow (4/22/2014)
 + test_getValues (4/28/2014)
 + test_insertRow (4/6/2014)
@@ -168,10 +168,10 @@ class DBTest(unittest.TestCase):
     def test_getDBName(self):
         #Setup
         import db
-        t = db.DB('someWeirdName.sql')
+        t = db.DB(':memory:')
 
         #Get name of DB => 'someWeirdName'
-        self.assertEquals(t.getDBName(), 'someWeirdName')
+        self.assertEquals(t.getDBName(), ':memory:')
 
         #Clean up
         #Close an open DB => True
