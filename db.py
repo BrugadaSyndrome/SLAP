@@ -30,24 +30,34 @@ TODO:
     - make a logging mode and a debugging mode module
         + logging mode will print each statement out to a file as they are executed
         + debugging mode will print each statement out to the console as they are executed
+    ? record success or failure with each query
 
 - [V 0.2.5] - Alter Table
     - Make an alterTable method
-        + Extend the functionality to allow renaming tables and dropping tables
+        ? Extend the functionality to allow renaming tables and dropping tables if possible
 
 -!!!NEED TO MAKE ALL FUNCTIONS SAFE FROM SQL INJECTION ATTACKS!!!-
 
 """
 
 from errors import *
+import logger as log
 import parameterize as param
 import sqlite3 as sql
 
 class DB:
     #__int__(self,
-    #        name) #Name of the DB to be created
-    def __init__(self, name=":memory:"):
-        #Data members
+    #        name,     #Name of the DB to be created
+    #        keep_log) #Enter 'console' or 'file' as destination to write a log
+    def __init__(self, name=":memory:", keep_log=False):
+        #Logger
+        if (keep_log is not False):
+            self.keep_log = True
+            self.record = log.Logger(keep_log)
+        else:
+            self.keep_log = False
+
+        #Name
         i = name.rfind('.')
         if (i != -1):
             self.name = name[:i]
@@ -56,14 +66,17 @@ class DB:
 
         #Load DB
         self.db = sql.connect(name)
+        self.record.note('''Open DB ({0})'''.format(self.getDBName()))
         #Create DB cursor
         self.cursor = self.db.cursor()
+        self.record.note('''Open cursor''')
 
     #createTable(self,
     #            table, #Table name
     #            info)  #(Column_name_1, ..., Column_name_X)
     def createTable(self, table, info):
-        #print '''CREATE TABLE {0} {1}'''.format(table, info)
+        if (self.keep_log):
+            self.record.note('''CREATE TABLE {0} {1}'''.format(table, info))
         try:
             self.cursor.execute('''CREATE TABLE {0} {1}'''.format(table, info))
             self.db.commit()
@@ -77,7 +90,8 @@ class DB:
     #dropTable(self,
     #          table) #Table name
     def dropTable(self, table):
-        #print '''DROP TABLE IF EXISTS {0}'''.format(table)
+        if (self.keep_log):
+            self.record.note('''DROP TABLE IF EXISTS {0}'''.format(table))
         try:
             self.cursor.execute('''DROP TABLE IF EXISTS {0}'''.format(table))
             self.db.commit()
@@ -89,11 +103,11 @@ class DB:
     #clearTable(self,
     #           table) #Table name
     def clearTable(self, table):
-        #print '''DELETE FROM {0}'''.format(table)
+        if (self.keep_log):
+            self.record.note('''DELETE FROM {0}'''.format(table))
         try:
             self.cursor.execute('''DELETE FROM {0}'''.format(table))
             self.db.commit()
-            #print 'Table ({0}) successfully cleared.'.format(table)
             return True
         except sql.OperationalError as e:
             if ("syntax error" in str(e)):
@@ -106,7 +120,9 @@ class DB:
     #          info) #{key0:value0, ..., keyX:valueX}
     def insertRow(self, row, info):
         (keys, values) = param.paramTuple(info)
-        #print '''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values)
+        if (self.keep_log):
+            (tk, tv) = param.paramTupleDebug(info)
+            self.record.note('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, tk, tv))
         try:
             self.cursor.execute('''INSERT INTO {0} ({1}) VALUES ({2})'''.format(row, keys, values), info)
             self.db.commit()
@@ -137,10 +153,12 @@ class DB:
     #          row,       #Row name
     #          condition) #Condition to select data 
     def deleteRow(self, row, condition):
-        query = param.paramKey(condition)
-        #print '''DELETE FROM {0} WHERE {1}'''.format(row, query)
+        (query, clean) = param.paramKey(condition)
+        if (self.keep_log):
+            tq = param.paramDebug(condition)
+            self.record.note('''DELETE FROM {0} WHERE {1}'''.format(row, tq))
         try:
-            self.cursor.execute('''DELETE FROM {0} WHERE {1}'''.format(row, query), condition)
+            self.cursor.execute('''DELETE FROM {0} WHERE {1}'''.format(row, query), clean)
             self.db.commit()
             return True
         except sql.OperationalError as e:
@@ -160,10 +178,12 @@ class DB:
     #          info,      #CSV string with columns to retrieve data from
     #          condition) #Dictionary of search requirements
     def getValues(self, row, info, condition):
-        query = param.paramKey(condition)
-        #print '''SELECT ({0}) FROM {1} WHERE {2}'''.format(info, row, query)
+        (query, clean) = param.paramKey(condition)
+        if (self.keep_log):
+            tq = param.paramDebug(condition)
+            self.record.note('''SELECT ({0}) FROM {1} WHERE {2}'''.format(info, row, tq))
         try:
-            self.cursor.execute('''SELECT {0} FROM {1} WHERE {2}'''.format(info, row, query), condition)
+            self.cursor.execute('''SELECT {0} FROM {1} WHERE {2}'''.format(info, row, query), clean)
             result = self.cursor.fetchall()
             return result
         except sql.OperationalError as e:
@@ -182,10 +202,12 @@ class DB:
     #       row,        #Row name
     #       condition)  #Dictionary of data involved in the query
     def getRow(self, row, condition):
-        query = param.paramKey(condition)
-        #print '''SELECT * FROM {0} WHERE {1}'''.format(row, query)
+        (query, clean) = param.paramKey(condition)
+        if (self.keep_log):
+            tq = param.paramDebug(condition)
+            self.record.note('''SELECT * FROM {0} WHERE {1}'''.format(row, tq))
         try:
-            self.cursor.execute('''SELECT * FROM {0} WHERE {1}'''.format(row, query), condition)
+            self.cursor.execute('''SELECT * FROM {0} WHERE {1}'''.format(row, query), clean)
             result = self.cursor.fetchall()
             return result
         except sql.OperationalError as e:
@@ -206,10 +228,12 @@ class DB:
     #          condition)  #Dictionary of a single item with a certain value to be found in DB
     def updateRow(self, row, info, condition):
         changes = param.paramDebug(info)
-        query = param.paramKey(condition)
-        #print '''UPDATE {0} SET {1} WHERE {2}'''.format(row, changes, query)
+        (query, clean) = param.paramKey(condition)
+        if (self.keep_log):
+            tq = param.paramDebug(condition)
+            self.record.note('''UPDATE {0} SET {1} WHERE {2}'''.format(row, changes, tq))
         try:
-            self.cursor.execute('''UPDATE {0} SET {1} WHERE {2}'''.format(row, changes, query), condition)
+            self.cursor.execute('''UPDATE {0} SET {1} WHERE {2}'''.format(row, changes, query), clean)
             self.db.commit()
             return True
         except sql.OperationalError as e:
@@ -224,10 +248,8 @@ class DB:
                 column = e[begin:]
                 raise ColumnDNE_Error(column, row, self.getDBName())
 
-    ##getTableNames(self)
-    """
-    Returns all table names in DB
-    """
+    #getTableNames(self)
+    # Return all table names in db
     def getTableNames(self):
         self.cursor.execute("select * from sqlite_master")
         schema = self.cursor.fetchall()
@@ -239,10 +261,8 @@ class DB:
 
     #getColumnNames(self,
     #               table) #Table name
-    """
-    Returns all the columns name values from a table
-    Returns in the format (tableName, [columnNames])
-    """
+    # Returns all the columns name values from a table
+    # in the format (tableName, [columnName0, ..., columnNameX])
     def getColumnNames(self, table):
         #Get table header from DB
         d = {'name': table}
@@ -256,7 +276,7 @@ class DB:
         rp = schema[4].rfind(')')
         #Type cast from unicode to string
         schema = str(schema[4])
-        #Splice out the columnnames
+        #Splice out the column names
         schema = schema[lp:rp]
         temp = schema.split(',')
         #Remove white space
@@ -273,10 +293,8 @@ class DB:
 
     #getConstraints(self,
     #               table) #Table name
-    """
-    Returns all the table columns that are under a unique/primary key restraint
-    Returns in the format [(table_name, [column info]), ..., (table_name, [column info])]
-    """
+    # Returns all the table columns that are under a unique/primary key restraint
+    # in the format [(table_name, [column info]), ..., (table_name, [column info])]
     def getConstraints(self, table):
         #Get table header from DB
         d = {'name': table}
@@ -295,7 +313,7 @@ class DB:
         temp = name.lower()
         n = temp.find('create table')
         name = name[n+12:].strip()
-        #Splice out the columnnames
+        #Splice out the column names
         schema = schema[lp:rp]
         temp = schema.split(',')
         #Remove white space
@@ -319,8 +337,10 @@ class DB:
             self.db.commit()
             #Close cursor
             self.cursor.close()
+            self.record.note('''Close cursor''')
             #Close database
             self.db.close()
+            self.record.note('''Close DB ({0})'''.format(self.getDBName()))
             return True
         except sql.ProgrammingError:
             raise DBClosedError(self.getDBName())
@@ -330,7 +350,22 @@ class DB:
         return self.name
 
 def main():
-    db = DB()
+    db = DB(keep_log='console')
+    db.createTable('test', '(name TEXT, ID INTEGER NOT NULL PRIMARY KEY)')
+    db.insertRow('test', {'name': 'Coby'})
+    db.insertRow('test', {'name': 'Keely'})
+    db.insertRow('test', {'name': 'Chancie'})
+    db.insertRow('test', {'name': 'Misty'})
+    db.insertRow('test', {'name': 'Dusty'})
+    print db.getValues('test', 'ID', {'name': 'Coby'})
+    print db.getRow('test', {'ID': ('>=', 1)})
+    db.deleteRow('test', {'name': 'Dusty'})
+    print db.getRow('test', {'ID': ('>=', 1)})
+    db.updateRow('test', {'name': 'OOPS!'}, {'ID': ('>=', 1)})
+    print db.getRow('test', {'ID': ('>=', 1)})
+
+    db.clearTable('test')
+    db.dropTable('test')
 
     db.closeDB()
 

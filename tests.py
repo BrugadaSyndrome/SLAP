@@ -17,7 +17,7 @@ DONE:
 + test_getRow (4/22/2014)
 + test_getValues (4/28/2014)
 + test_insertRow (4/6/2014)
-+ test_parameterize (5/3/2014)
++ test_parameterize (5/4/2014)
 + test_updateRow (5/3/2014)
 
 TODO:
@@ -271,6 +271,8 @@ class DBTest(unittest.TestCase):
 
         #Seperate values with param dict  => "('Count, Name, Number', ':Count, :Name, :Number')"
         self.assertEquals(param.paramTuple({'Name': 'Test', "Number": 9, "Count": 20}), ('Count, Name, Number', ':Count, :Name, :Number'))
+        #Seperate values with param dict  => "('Count, Name, Number', ':Count, :Name, :Number')"
+        self.assertEquals(param.paramTupleDebug({'Name': 'Test', "Number": 9, "Count": 20}), ('Count, Name, Number', '20, Test, 9'))
         #Join keys with key lookups and equal comparisons  => "Count=:Count, Name=:Name, Number=:Number"
         self.assertEquals(param.paramComma({'Name': 'Test', "Number": 9, "Count": 20}), "Count=:Count, Name=:Name, Number=:Number")
         #Join keys with key and different comparators => "Count<:Count AND NOT Name=:Name AND Number=:Number"

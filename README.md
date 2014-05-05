@@ -14,5 +14,6 @@ FILES
 + adapters.py (Datatype adapters for sqlite3 db module)
 + db.py (Main)
 + errors.py (Custom error methods)
++ logger.py (Logging utility)
 + parameterize.py (Utility to help parameterize dictionaries)
 + tests.py (Testing done using the unittest module)

@@ -11,6 +11,7 @@ DONE:
 
 TODO:
 - [V 0.0.2]
+    - Need to research converters (opposite of adapters)
     - Person/Name Class(first, middle, last)
 
 - [V 0.0.3]
@@ -21,7 +22,7 @@ TODO:
 import sqlite3 as sql
 import datetime, time
 
-#Creator adaptor functions
+#Create adaptor functions
 def adapt_datetime(ts):
     return time.mktime(ts.timetuple())
 

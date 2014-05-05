@@ -57,22 +57,23 @@ def paramComma(info):
 #          info)    #Dictionary to parse
 # return "key0<=:key0, key1!=:key1, ... , keyX<:keyX"
 def paramKey(info):
+    ti = dict(info)
     pairs = ""
-    for k in info.keys():
-        if (str(type(info[k])) != "<type 'tuple'>"):
+    for k in ti.keys():
+        if (str(type(ti[k])) != "<type 'tuple'>"):
             pairs += k + "=:" + k + " AND "
-        elif (info[k][0] in OPERATORS):
-            if (info[k][0] == '!='):
-                pairs += "NOT " + k + info[k][0][1] + ":" + k + " AND "
-            elif (info[k][0] == '=='):
-                pairs += k + info[k][0][1] + ":" + k + " AND "
+        elif (ti[k][0] in OPERATORS):
+            if (ti[k][0] == '!='):
+                pairs += "NOT " + k + ti[k][0][1] + ":" + k + " AND "
+            elif (ti[k][0] == '=='):
+                pairs += k + ti[k][0][1] + ":" + k + " AND "
             else:
-                pairs += k + info[k][0] + ":" + k + " AND "
-            info[k] = info[k][1]
+                pairs += k + ti[k][0] + ":" + k + " AND "
+            ti[k] = ti[k][1]
         else:
-            print '{0} is not a valid operator'.format(info[k][0])
+            print '{0} is not a valid operator'.format(ti[k][0])
     pairs = pairs[:len(pairs)-5]
-    return pairs
+    return (pairs, ti)
 
 #paramDebug(self,
 #          info)    #Dictionary to parse
@@ -81,25 +82,30 @@ def paramDebug(info):
     pairs = ""
     for k in info.keys():
         if (str(type(info[k])) != "<type 'tuple'>"):
+            #String value
             if (type(info[k]) is str):
                 pairs += k + '="' + info[k] + '" AND '
+            #Integer Value
             else:
                 pairs += k + '=' + str(info[k]) + ' AND '
-        #String value
-        elif (type(info[k][1]) is str):
-            if (info[k][0] == '!='):
-                pairs += "NOT " + k + info[k][0][1] + '"' + info[k][1] + '" AND '
-            elif (info[k][0] == '=='):
-                pairs += k + info[k][0][1] + '"' + info[k][1] + '" AND '
+        elif (info[k][0] in OPERATORS):
+            #String value
+            if (type(info[k][1]) is str):
+                if (info[k][0] == '!='):
+                    pairs += "NOT " + k + info[k][0][1] + '"' + info[k][1] + '" AND '
+                elif (info[k][0] == '=='):
+                    pairs += k + info[k][0][1] + '"' + info[k][1] + '" AND '
+                else:
+                    pairs += k + info[k][0] + '"' + info[k][1] + '" AND '
+            #Integer value
             else:
-                pairs += k + info[k][0] + '"' + info[k][1] + '" AND '
-        #Integer value
+                if (info[k][0] == '!='):
+                    pairs += "NOT " + k + info[k][0][1] + str(info[k][1]) + " AND "
+                elif (info[k][0] == '=='):
+                    pairs += k + info[k][0][1] + str(info[k][1]) + " AND "
+                else:
+                    pairs += k + info[k][0] + str(info[k][1]) + " AND "
         else:
-            if (info[k][0] == '!='):
-                pairs += "NOT " + k + info[k][0][1] + str(info[k][1]) + " AND "
-            elif (info[k][0] == '=='):
-                pairs += k + info[k][0][1] + str(info[k][1]) + " AND "
-            else:
-                pairs += k + info[k][0] + str(info[k][1]) + " AND "
+            print '{0} is not a valid operator'.format(info[k][0])
     pairs = pairs[:len(pairs)-5]
     return pairs
