@@ -30,9 +30,7 @@ TODO:
 - [V 0.2.5] - Alter Table
     - Make an alterTable method
         ? Extend the functionality to allow renaming tables and dropping tables if possible
-
--!!!NEED TO MAKE ALL FUNCTIONS SAFE FROM SQL INJECTION ATTACKS!!!-
-
+        
 """
 
 from errors import *
