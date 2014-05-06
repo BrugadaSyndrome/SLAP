@@ -31,8 +31,8 @@ class DBTest(unittest.TestCase):
     def test_createTable(self):
         #Setup
         from errors import DuplicateTableError, SyntaxError
-        import db
-        t = db.DB()
+        import slap
+        t = slap.DB()
         
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
@@ -52,8 +52,8 @@ class DBTest(unittest.TestCase):
     def test_closeDB(self):
         #Setup
         from errors import DBClosedError
-        import db
-        t = db.DB()
+        import slap
+        t = slap.DB()
 
         #Close an open DB => True
         self.assertTrue(t.closeDB())
@@ -65,8 +65,8 @@ class DBTest(unittest.TestCase):
     def test_clearTable(self):
         #Setup
         from errors import SyntaxError, TableDNE_Error
-        import db
-        t = db.DB()
+        import slap
+        t = slap.DB()
         
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
@@ -84,8 +84,8 @@ class DBTest(unittest.TestCase):
     def test_deleteRow(self):
         #Setup
         from errors import ColumnDNE_Error, SyntaxError, TableDNE_Error
-        import db
-        t = db.DB()
+        import slap
+        t = slap.DB()
 
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
@@ -111,8 +111,8 @@ class DBTest(unittest.TestCase):
     def test_dropTable(self):
         #Setup
         from errors import SyntaxError
-        import db
-        t = db.DB()
+        import slap
+        t = slap.DB()
         
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
@@ -132,8 +132,8 @@ class DBTest(unittest.TestCase):
     def test_getColumnNames(self):
         #Setup
         from errors import TableDNE_Error
-        import db
-        t = db.DB()
+        import slap
+        t = slap.DB()
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
 
@@ -149,8 +149,8 @@ class DBTest(unittest.TestCase):
     def test_getConstraints(self):
         #Setup
         from errors import TableDNE_Error
-        import db
-        t = db.DB()
+        import slap
+        t = slap.DB()
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER CHECK(age > 0), ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
         #Create a table => True
@@ -167,8 +167,8 @@ class DBTest(unittest.TestCase):
 
     def test_getDBName(self):
         #Setup
-        import db
-        t = db.DB(':memory:')
+        import slap
+        t = slap.DB(':memory:')
 
         #Get name of DB => 'someWeirdName'
         self.assertEquals(t.getDBName(), ':memory:')
@@ -180,8 +180,8 @@ class DBTest(unittest.TestCase):
     def test_getRow(self):
         #Setup
         from errors import ColumnDNE_Error, SyntaxError, TableDNE_Error
-        import db
-        t = db.DB()
+        import slap
+        t = slap.DB()
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
         #Insert full rows in an existing table => True
@@ -207,8 +207,8 @@ class DBTest(unittest.TestCase):
     def test_getValues(self):
         #Setup
         from errors import ColumnDNE_Error, SyntaxError, TableDNE_Error
-        import db
-        t = db.DB()
+        import slap
+        t = slap.DB()
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
         #Insert full rows in an existing table => True
@@ -234,9 +234,9 @@ class DBTest(unittest.TestCase):
     def test_insertRow(self):
         #Setup
         from errors import AdapterMissingError, ConstraintError, TableDNE_Error, SyntaxError, UniqueError
-        import db
+        import slap
         import datetime
-        t = db.DB()
+        t = slap.DB()
 
         #Create a table => True
         self.assertTrue(t.createTable('MTG', '(name TEXT UNIQUE, color TEXT, count INTEGER CHECK(count > 0), time datetime, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
@@ -265,9 +265,9 @@ class DBTest(unittest.TestCase):
 
     def test_parameterize(self):
         #Setup
-        import db
+        import slap
         import parameterize as param
-        t = db.DB()
+        t = slap.DB()
 
         #Seperate values with param dict  => "('Count, Name, Number', ':Count, :Name, :Number')"
         self.assertEquals(param.paramTuple({'Name': 'Test', "Number": 9, "Count": 20}), ('Count, Name, Number', ':Count, :Name, :Number'))
@@ -287,8 +287,8 @@ class DBTest(unittest.TestCase):
     def test_updateRow(self):
         #Setup
         from errors import ColumnDNE_Error, SyntaxError, TableDNE_Error
-        import db
-        t = db.DB()
+        import slap
+        t = slap.DB()
         #Create a table => True
         self.assertTrue(t.createTable('test', '(name TEXT, color TEXT, age INTEGER, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)'))
         #Insert full rows in an existing table => True

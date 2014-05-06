@@ -2,7 +2,7 @@
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
 LAST UPDATE: 5/4/2014
-VERSION: 0.2.3
+VERSION: 0.2.4
 
 DONE:
 == Constructors / Destructors ==
@@ -26,11 +26,6 @@ DONE:
 + DB.getValues (5/4/2014)
 
 TODO:
-- [V 0.2.4] - Logging Mode
-    - make a logging mode and a debugging mode module
-        + logging mode will print each statement out to a file as they are executed
-        + debugging mode will print each statement out to the console as they are executed
-    ? record success or failure with each query
 
 - [V 0.2.5] - Alter Table
     - Make an alterTable method
