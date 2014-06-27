@@ -4,7 +4,6 @@ PROJECT: SLAP (Sql-Lite wrApper in Python)
 LAST UPDATE: 5/4/2014
 VERSION: 0.2.4
 
-DONE:
 == Constructors / Destructors ==
 + DB.init (5/4/2014)
 
@@ -28,9 +27,15 @@ DONE:
 TODO:
 
 - [V 0.2.5] - Alter Table
+    - destructor
     - Make an alterTable method
         ? Extend the functionality to allow renaming tables and dropping tables if possible
-        
+
+- [V 0.2.6] - Join Table
+    ? Is if practical to make generic join statements
+    - Outer join
+    - Inner join
+
 """
 
 from errors import *
@@ -343,7 +348,7 @@ class DB:
         return self.name
 
 def main():
-    db = DB(keep_log='console')
+    db = DB(name='test.sql', keep_log='console')
     db.createTable('test', '(name TEXT, ID INTEGER NOT NULL PRIMARY KEY)')
     db.insertRow('test', {'name': 'Coby'})
     db.insertRow('test', {'name': 'Keely'})

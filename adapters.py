@@ -4,9 +4,10 @@ PROJECT: SLAP (Sql-Lite wrApper in Python)
 LAST UPDATE: 5/3/2014
 VERSION: 0.0.1
 
-DONE:
 == Adaptors ==
-+   adapt_datetime(datetime.datetime.now()) => float (3/23/2014)
++ adapt_datetime(datetime.datetime.now()) => float (3/23/2014)
+
+== Extractors ==
 + extract_datetime(float) => datetime.datetime.now() (3/23/2014)
 
 TODO:

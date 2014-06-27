@@ -12,7 +12,7 @@ Project Lead:
 FILES
 =====
 + adapters.py (Datatype adapters for sqlite3 db module)
-+ db.py (Main)
++ slap.py (Main import this to use in your application)
 + errors.py (Custom error methods)
 + logger.py (Logging utility)
 + parameterize.py (Utility to help parameterize dictionaries)

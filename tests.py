@@ -4,7 +4,6 @@ PROJECT: SLAP (Sql-Lite wrApper in Python)
 LAST UPDATE: 5/4/2014
 VERSION: 0.0.1
 
-DONE:
 == TESTS ==
 + test_clearTable (3/27/2014)
 + test_closeDB (3/27/2104)

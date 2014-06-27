@@ -4,7 +4,6 @@ PROJECT: SLAP (Sql-Lite wrApper in Python)
 LAST UPDATE: 5/4/2014
 VERSION: 0.0.1
 
-DONE:
 == Errors ==
 + AdapterMissingError (4/6/2014)
 + DBClosedError (3/27/2014)

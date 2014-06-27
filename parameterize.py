@@ -4,7 +4,7 @@ PROJECT: SLAP (Sql-Lite wrApper in Python)
 LAST UPDATE: 5/4/2014
 VERSION: 0.0.2
 
-DONE:
+== Functions ==
 + paramTuple (5/3/2014)
 + paramTupleDebug (5/4/2014)
 + paramComma (5/3/2014)

@@ -4,11 +4,9 @@ PROJECT: SLAP (Sql-Lite wrApper in Python)
 LAST UPDATE: 5/4/2014
 VERSION: 0.0.1
 
-DONE:
-
 TODO:
-[V 0.0.1]
-    - Log to console or file
+[V 0.0.2]
+
 
 """
 import datetime
