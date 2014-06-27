@@ -1,11 +1,12 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
-LAST UPDATE: 5/4/2014
+LAST UPDATE: 6/27/2014
 VERSION: 0.2.4
 
 == Constructors / Destructors ==
 + DB.init (5/4/2014)
++ DB.del (6/27/2014)
 
 == Modify Table (Setters) ==
 + DB.createTable (3/27/2014)
@@ -27,7 +28,6 @@ VERSION: 0.2.4
 TODO:
 
 - [V 0.2.5] - Alter Table
-    - destructor
     - Make an alterTable method
         ? Extend the functionality to allow renaming tables and dropping tables if possible
 
@@ -68,6 +68,15 @@ class DB:
         #Create DB cursor
         self.cursor = self.db.cursor()
         self.record.note('''Open cursor''')
+
+    #__del__(self)
+    def __del__(self):
+        del self.keep_log
+        del self.record
+        del self.name
+        del self.db
+        del self.cursor
+        return True
 
     #createTable(self,
     #            table, #Table name
