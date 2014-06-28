@@ -5,13 +5,13 @@ LAST UPDATE: 6/27/2014
 VERSION: 0.2.4
 
 == Constructors / Destructors ==
-+ DB.init (5/4/2014)
++ DB.init (6/27/2014)
 + DB.del (6/27/2014)
 
 == Modify Table (Setters) ==
 + DB.createTable (3/27/2014)
 + DB.clearTable (4/1/2014)
-+ DB.closeDB (3/27/2014)
++ DB.closeDB (6/27/2014)
 + DB.deleteRow (4/21/2014)
 + DB.dropTable (4/26/2014)
 + DB.insertRow (5/4/2014)

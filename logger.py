@@ -1,12 +1,18 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
-LAST UPDATE: 5/4/2014
-VERSION: 0.0.1
+LAST UPDATE: 6/27/2014
+VERSION: 0.0.2
+
+== Constructors / Destructors ==
++ Logger.init (6/27/2014)
++ Logger.del (6/27/2014)
+
+== Methods ==
++ Logger.note (6/27/2014)
 
 TODO:
-[V 0.0.2]
-
+[V 0.0.3]
 
 """
 import datetime
@@ -19,6 +25,7 @@ class Logger:
         elif (output == 'file'):
             self.output = 'file'
             self.f_name = 'LOG_' + str('@'.join(str(datetime.datetime.now()).replace(':', '.').split()))[:-7] + '.lgf'
+            self.file = open(self.f_name, 'a')
         else:
             self.output = 'console'
             self.note('! ({0}) is not a valid choice.\n! Please use "console" or "file".\n! Logging set to be done in console.'.format(output))
@@ -27,14 +34,14 @@ class Logger:
 
     def __del__(self):
         self.note('\n' + 'DONE:  ' + str(datetime.datetime.now()) + '\n')
+        self.file.close()
 
     def note(self, text):
         if (self.output == 'console'):
             print text
         elif (self.output == 'file'):
-            fo = open(self.f_name, 'a')
-            fo.write(text + '\n')
-            fo.close()
+            self.file.write(text + '\n')
+
 
 def main():
     t = Logger('file')
