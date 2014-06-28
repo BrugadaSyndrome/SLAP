@@ -47,11 +47,11 @@ class DB:
     #__int__(self,
     #        name,     #Name of the DB to be created
     #        keep_log) #Enter 'console' or 'file' as destination to write a log
-    def __init__(self, name=":memory:", keep_log=False):
+    def __init__(self, name=":memory:", log_commands="No"):
         #Logger
-        if (keep_log is not False):
+        if (log_commands is not "No"):
             self.keep_log = True
-            self.record = log.Logger(keep_log)
+            self.record = log.Logger(log_commands)
         else:
             self.keep_log = False
 
@@ -64,19 +64,23 @@ class DB:
 
         #Load DB
         self.db = sql.connect(name)
-        self.record.note('''Open DB ({0})'''.format(self.getDBName()))
+        if (self.keep_log):
+            self.record.note('''Open DB ({0})'''.format(self.getDBName()))
         #Create DB cursor
         self.cursor = self.db.cursor()
-        self.record.note('''Open cursor''')
+        if (self.keep_log):
+            self.record.note('''Open cursor''')
 
     #__del__(self)
     def __del__(self):
-        del self.keep_log
-        del self.record
-        del self.name
-        del self.db
-        del self.cursor
-        return True
+        try:
+            del self.record
+            del self.keep_log
+            del self.name
+            del self.db
+            del self.cursor
+        finally:
+            return True
 
     #createTable(self,
     #            table, #Table name
@@ -344,10 +348,12 @@ class DB:
             self.db.commit()
             #Close cursor
             self.cursor.close()
-            self.record.note('''Close cursor''')
+            if (self.keep_log):
+                self.record.note('''Close cursor''')
             #Close database
             self.db.close()
-            self.record.note('''Close DB ({0})'''.format(self.getDBName()))
+            if (self.keep_log):
+                self.record.note('''Close DB ({0})'''.format(self.getDBName()))
             return True
         except sql.ProgrammingError:
             raise DBClosedError(self.getDBName())
@@ -357,19 +363,19 @@ class DB:
         return self.name
 
 def main():
-    db = DB(name='test.sql', keep_log='console')
+    db = DB(name='test.sql', log_commands='console')
     db.createTable('test', '(name TEXT, ID INTEGER NOT NULL PRIMARY KEY)')
     db.insertRow('test', {'name': 'Coby'})
     db.insertRow('test', {'name': 'Keely'})
     db.insertRow('test', {'name': 'Chancie'})
     db.insertRow('test', {'name': 'Misty'})
     db.insertRow('test', {'name': 'Dusty'})
-    print db.getValues('test', 'ID', {'name': 'Coby'})
-    print db.getRow('test', {'ID': ('>=', 1)})
+    #print db.getValues('test', 'ID', {'name': 'Coby'})
+    #print db.getRow('test', {'ID': ('>=', 1)})
     db.deleteRow('test', {'name': 'Dusty'})
-    print db.getRow('test', {'ID': ('>=', 1)})
+    #print db.getRow('test', {'ID': ('>=', 1)})
     db.updateRow('test', {'name': 'OOPS!'}, {'ID': ('>=', 1)})
-    print db.getRow('test', {'ID': ('>=', 1)})
+    #print db.getRow('test', {'ID': ('>=', 1)})
 
     db.clearTable('test')
     db.dropTable('test')
