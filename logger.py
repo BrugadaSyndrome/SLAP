@@ -12,7 +12,7 @@ VERSION: 0.0.2
 + Logger.note (6/27/2014)
 
 TODO:
-[V 0.0.3]
+- [V 0.0.3]
 
 """
 import datetime
