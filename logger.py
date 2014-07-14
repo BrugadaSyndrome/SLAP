@@ -24,8 +24,8 @@ class Logger:
             self.output = 'console'
         elif (output == 'file'):
             self.output = 'file'
-            self.f_name = 'LOG_' + str('@'.join(str(datetime.datetime.now()).replace(':', '.').split()))[:-7] + '.lgf'
-            self.file = open(self.f_name, 'a')
+            self.file_name = 'LOG_' + str('@'.join(str(datetime.datetime.now()).replace(':', '.').split()))[:-7] + '.lgf'
+            self.file = open(self.file_name, 'a')
         else:
             self.output = 'console'
             self.note('! ({0}) is not a valid choice.\n! Please use "console" or "file".\n! Logging set to be done in console.'.format(output))
@@ -34,7 +34,8 @@ class Logger:
 
     def __del__(self):
         self.note('\n' + 'DONE:  ' + str(datetime.datetime.now()) + '\n')
-        self.file.close()
+        if (self.output == 'file'):
+            self.file.close()
 
     def note(self, text):
         if (self.output == 'console'):
