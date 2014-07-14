@@ -6,7 +6,7 @@ VERSION: 0.0.2
 
 == Constructors / Destructors ==
 + Logger.init (6/27/2014)
-+ Logger.del (6/27/2014)
++ Logger.del (7/14/2014)
 
 == Methods ==
 + Logger.note (6/27/2014)
