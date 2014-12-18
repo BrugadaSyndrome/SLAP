@@ -363,22 +363,18 @@ class DB:
         return self.name
 
 def main():
-    db = DB(name='test.sql', log_commands='console')
-    db.createTable('test', '(name TEXT, ID INTEGER NOT NULL PRIMARY KEY)')
-    db.insertRow('test', {'name': 'Coby'})
-    db.insertRow('test', {'name': 'Keely'})
-    db.insertRow('test', {'name': 'Chancie'})
-    db.insertRow('test', {'name': 'Misty'})
-    db.insertRow('test', {'name': 'Dusty'})
-    #print db.getValues('test', 'ID', {'name': 'Coby'})
-    #print db.getRow('test', {'ID': ('>=', 1)})
-    db.deleteRow('test', {'name': 'Dusty'})
-    #print db.getRow('test', {'ID': ('>=', 1)})
-    db.updateRow('test', {'name': 'OOPS!'}, {'ID': ('>=', 1)})
-    #print db.getRow('test', {'ID': ('>=', 1)})
+    db = DB(name=':memory:', log_commands='console')
 
-    db.clearTable('test')
-    db.dropTable('test')
+    db.createTable('class', '(name TEXT, age INTEGER, role TEXT, ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT)')
+    db.insertRow('class', {'name': 'Coby', 'age': 23, 'role': 'student'})
+    db.insertRow('class', {'name': 'Ron', 'age': 25, 'role': 'student'})
+    db.insertRow('class', {'name': 'Carly', 'age': 33, 'role': 'student'})
+    db.insertRow('class', {'name': 'Susan', 'age': 24, 'role': 'student'})
+    db.insertRow('class', {'name': 'Charlie', 'age': 19, 'role': 'student'})
+    db.insertRow('class', {'name': 'Daniel', 'age': 28, 'role': 'student'})
+    db.insertRow('class', {'name': 'Professor Stan', 'age': 40, 'role': 'teacher'})
+
+    print db.getColumnNames('class')
 
     db.closeDB()
 

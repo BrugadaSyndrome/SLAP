@@ -21,7 +21,8 @@ TODO:
 """
 
 import sqlite3 as sql
-import datetime, time
+import datetime
+import time
 
 #Create adaptor functions
 def adapt_datetime(ts):

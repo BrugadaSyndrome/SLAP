@@ -20,7 +20,8 @@ VERSION: 0.0.1
 + test_updateRow (5/3/2014)
 
 TODO:
-
+-[V 0.0.1]
+    - test_parameterize needs to have its tests updated (see todo in method)
 """
 
 import unittest
@@ -263,6 +264,8 @@ class DBTest(unittest.TestCase):
         self.assertTrue(t.closeDB())
 
     def test_parameterize(self):
+        #TODO: Need to test the second item returned by test_paramterize
+
         #Setup
         import slap
         import parameterize as param
@@ -275,7 +278,7 @@ class DBTest(unittest.TestCase):
         #Join keys with key lookups and equal comparisons  => "Count=:Count, Name=:Name, Number=:Number"
         self.assertEquals(param.paramComma({'Name': 'Test', "Number": 9, "Count": 20}), "Count=:Count, Name=:Name, Number=:Number")
         #Join keys with key and different comparators => "Count<:Count AND NOT Name=:Name AND Number=:Number"
-        self.assertEquals(param.paramKey({'Name': ('!=', 'Test'), "Number": 9, "Count": ("<", 20)}), "Count<:Count AND NOT Name=:Name AND Number=:Number")
+        self.assertEquals(param.paramKey({'Name': ('!=', 'Test'), "Number": 9, "Count": ("<", 20)})[0], "Count<:Count AND NOT Name=:Name AND Number=:Number")
         #Join keys with key values and different comparators => 'Count<20 AND NOT Name="Test" AND Number=9'
         self.assertEquals(param.paramDebug({'Name': ('!=', 'Test'), "Number": ("==", 9), "Count": ("<", 20)}), 'Count<20 AND NOT Name="Test" AND Number=9')
 

@@ -43,7 +43,6 @@ class Logger:
         elif (self.output == 'file'):
             self.file.write(text + '\n')
 
-
 def main():
     t = Logger('file')
 
