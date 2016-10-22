@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
-LAST UPDATE: 6/27/2014
+LAST UPDATE: 10/22/2016
 VERSION: 0.0.2
 
 == Constructors / Destructors ==
@@ -39,7 +39,7 @@ class Logger:
 
     def note(self, text):
         if (self.output == 'console'):
-            print text
+            print(text)
         elif (self.output == 'file'):
             self.file.write(text + '\n')
 

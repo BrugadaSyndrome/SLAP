@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
-LAST UPDATE: 5/4/2014
+LAST UPDATE: 10/22/2016
 VERSION: 0.0.3
 
 == Functions ==
@@ -71,9 +71,8 @@ def paramKey(info):
                 pairs += "{0}{1}:{0} AND ".format(k, ti[k][0])
             ti[k] = ti[k][1]
         else:
-            print '{0} is not a valid operator'.format(ti[k][0])
+            print('{0} is not a valid operator'.format(ti[k][0]))
     pairs = pairs[:len(pairs)-5]
-    #print pairs, ti
     return (pairs, ti)
 
 #paramDebug(self,
@@ -102,6 +101,6 @@ def paramDebug(info):
                 else:
                     pairs += "{0}{1}{2} AND ".format(k, info[k][0], info[k][1])
         else:
-            print '{0} is not a valid operator'.format(info[k][0])
+            print('{0} is not a valid operator'.format(info[k][0]))
     pairs = pairs[:len(pairs)-5]
     return pairs
