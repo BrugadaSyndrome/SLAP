@@ -16,6 +16,7 @@ TODO:
 
 """
 import datetime
+import os
 
 class Logger:
 
@@ -24,8 +25,13 @@ class Logger:
             self.output = 'console'
         elif (output == 'file'):
             self.output = 'file'
-            self.file_name = 'LOG_' + str('@'.join(str(datetime.datetime.now()).replace(':', '.').split()))[:-7] + '.lgf'
-            self.file = open(self.file_name, 'a')
+            path = os.getcwd()+'\\logs'
+            try:
+                os.mkdir(path)
+            except FileExistsError:
+                pass
+            file_name = 'LOG_' + str('@'.join(str(datetime.datetime.now()).replace(':', '.').split()))[:-10] + '.txt'
+            self.file = open(path+'\\'+file_name, 'a')
         else:
             self.output = 'console'
             self.note('! ({0}) is not a valid choice.\n! Please use "console" or "file".\n! Logging set to be done in console.'.format(output))

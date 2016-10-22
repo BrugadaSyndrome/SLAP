@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
-LAST UPDATE: 6/27/2014
+LAST UPDATE: 10/22/2016
 VERSION: 0.2.4
 
 == Constructors / Destructors ==
@@ -362,6 +362,7 @@ class DB:
     def getDBName(self):
         return self.name
 
+''''
 def main():
     db = DB(name=':memory:', log_commands='console')
 
@@ -374,9 +375,10 @@ def main():
     db.insertRow('class', {'name': 'Daniel', 'age': 28, 'role': 'student'})
     db.insertRow('class', {'name': 'Professor Stan', 'age': 40, 'role': 'teacher'})
 
-    print db.getColumnNames('class')
+    print(db.getColumnNames('class'))
 
     db.closeDB()
 
 if __name__ == '__main__':
     main()
+'''
