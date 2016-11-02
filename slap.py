@@ -1,7 +1,7 @@
 """
 AUTHOR: COBY JOHNSON
 PROJECT: SLAP (Sql-Lite wrApper in Python)
-LAST UPDATE: 10/22/2016
+LAST UPDATE: 11/1/2016
 VERSION: 0.2.4
 
 == Constructors / Destructors ==
@@ -12,22 +12,24 @@ VERSION: 0.2.4
 + DB.createTable (3/27/2014)
 + DB.clearTable (4/1/2014)
 + DB.closeDB (6/27/2014)
-+ DB.deleteRow (4/21/2014)
++ DB.deleteRow (11/1/2016)
 + DB.dropTable (4/26/2014)
 + DB.insertRow (5/4/2014)
-+ DB.updateRow (5/4/2014)
++ DB.updateRow (11/1/2016)
 
 == Getters ==
 + DB.getColumnNames (4/22/2014)
 + DB.getConstraints (5/3/2014)
 + DB.getDBName (4/21/2014)
 + DB.getRow (5/4/2014)
++ DB.getAllFromTable (10/30/2016)
 + DB.getTableNames (3/26/2014)
 + DB.getValues (5/4/2014)
 
 TODO:
 
 - [V 0.2.5] - Alter Table
+    - Error handling for getAllFromTable()
     - Make an alterTable method
         ? Extend the functionality to allow renaming tables and dropping tables if possible
 
@@ -161,28 +163,28 @@ class DB:
             raise AdapterMissingError(var_value, row, self.getDBName())
 
     #deleteRow(self,
-    #          row,       #Row name
+    #          table,       #Table name
     #          condition) #Condition to select data 
-    def deleteRow(self, row, condition):
+    def deleteRow(self, table, condition):
         (query, clean) = param.paramKey(condition)
         if (self.keep_log):
             tq = param.paramDebug(condition)
-            self.record.note('''DELETE FROM {0} WHERE {1}'''.format(row, tq))
+            self.record.note('''DELETE FROM {0} WHERE {1}'''.format(table, tq))
         try:
-            self.cursor.execute('''DELETE FROM {0} WHERE {1}'''.format(row, query), clean)
+            self.cursor.execute('''DELETE FROM {0} WHERE {1}'''.format(table, query), clean)
             self.db.commit()
             return True
         except sql.OperationalError as e:
             if ("no such table" in str(e)):
-                raise TableDNE_Error(row, self.getDBName())
+                raise TableDNE_Error(table, self.getDBName())
             elif ("no such column" in str(e)):
                 e = str(e)
                 begin = e.find(':') + 2
                 column = e[begin:]
-                raise ColumnDNE_Error(column, row, self.getDBName())
+                raise ColumnDNE_Error(column, table, self.getDBName())
             elif ("syntax error" in str(e)):
                 query = param.paramDebug(condition)
-                raise SyntaxError('''DELETE FROM {0} WHERE {1}'''.format(row, query))
+                raise SyntaxError('''DELETE FROM {0} WHERE {1}'''.format(table, query))
 
     #getValues(self,
     #          row,       #Row name
@@ -233,31 +235,42 @@ class DB:
                 column = e[begin:]
                 raise ColumnDNE_Error(column, row, self.getDBName())
 
+    def getAllFromTable(self, table):
+        if (self.keep_log):
+            self.record.note('''SELECT * FROM {0}'''.format(table))
+        try:
+            self.cursor.execute('''SELECT * FROM {0}'''.format(table))
+            result = self.cursor.fetchall()
+            return result
+        except:
+            print("getAllFromTable Failure: Need to set up proper error handling")
+
     #updateRow(self,
-    #          row,        #Row name
+    #          table,      #Table name
     #          info,       #Dictionary of new data
     #          condition)  #Dictionary of a single item with a certain value to be found in DB
-    def updateRow(self, row, info, condition):
-        changes = param.paramDebug(info)
-        (query, clean) = param.paramKey(condition)
+    def updateRow(self, table, info, condition):
+        query1 = param.paramComma(info)
+        (query2, clean) = param.paramKey(condition)
         if (self.keep_log):
             tq = param.paramDebug(condition)
-            self.record.note('''UPDATE {0} SET {1} WHERE {2}'''.format(row, changes, tq))
+            self.record.note('''UPDATE {0} SET {1} WHERE {2}'''.format(table, query1, tq))
         try:
-            self.cursor.execute('''UPDATE {0} SET {1} WHERE {2}'''.format(row, changes, query), clean)
+            data = {**clean, **info}
+            self.cursor.execute('''UPDATE {0} SET {1} WHERE {2}'''.format(table, query1, query2), data)
             self.db.commit()
             return True
         except sql.OperationalError as e:
             if ("syntax error" in str(e)):
                 query = param.paramDebug(condition)
-                raise SyntaxError('''UPDATE {0} SET {1} WHERE {2}'''.format(row, changes, query))
+                raise SyntaxError('''UPDATE {0} SET {1} WHERE {2}'''.format(table, changes, query))
             elif ("no such table" in str(e)):
-                raise TableDNE_Error(row, self.getDBName())
+                raise TableDNE_Error(table, self.getDBName())
             elif ("no such column" in str(e)):
                 e = str(e)
                 begin = e.find(':') + 2
                 column = e[begin:]
-                raise ColumnDNE_Error(column, row, self.getDBName())
+                raise ColumnDNE_Error(column, table, self.getDBName())
 
     #getTableNames(self)
     # Return all table names in db
